@@ -151,6 +151,10 @@ protected:
   // PoseCalibrator is pretty intimately tied to TrackerCalib, it manipulates a lot of its internal data directly. Ideally, TrackerCalib
   // would be rewritten as its own class, separate from Tracker, and its interface to PoseCalibrator would be more well defined.
   friend class PoseCalibrator; 
+
+  // PointCollector is pretty intimately tied to TrackerCalib, it manipulates a lot of its internal data directly. Ideally, TrackerCalib
+  // would be rewritten as its own class, separate from Tracker, and its interface to PoseCalibrator would be more well defined.
+  friend class PointCollector; 
   
 };
 
