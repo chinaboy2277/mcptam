@@ -321,7 +321,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
     m2GridRot[1][1] = 1;
     
     nDirnShift = 0;
-    ROS_INFO("Rotating by 0 degrees");
+    //ROS_INFO("Rotating by 0 degrees");
   }
   else if(dXAxisAngle <= 3*M_PI/4 && dXAxisAngle > M_PI/4)  // rotate +90 deg
   {
@@ -331,7 +331,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
     m2GridRot[1][1] = 0;
     
     nDirnShift = 1;
-    ROS_INFO("Rotating by 90 degrees");
+    //ROS_INFO("Rotating by 90 degrees");
   }
   else if(dXAxisAngle <= -M_PI/4 && dXAxisAngle > -3*M_PI/4) // rotate -90 deg
   {
@@ -341,7 +341,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
     m2GridRot[1][1] = 0;
     
     nDirnShift = 3;
-    ROS_INFO("Rotating by -90 degrees");
+    //ROS_INFO("Rotating by -90 degrees");
   }
   else // rotate 180 deg
   {
@@ -351,7 +351,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
     m2GridRot[1][1] = -1;
     
     nDirnShift = 2;
-    ROS_INFO("Rotating by 180 degrees");
+    //ROS_INFO("Rotating by 180 degrees");
   }
   
   CVD::ImageRef irMinPos(1000,1000);
@@ -390,7 +390,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
     mvGridCorners[i].mirGridPos -= irMinPos;
   }
   
-  ROS_INFO_STREAM("irMinPos: "<<irMinPos<<"   irMaxPos: "<<irMaxPos);
+  //ROS_INFO_STREAM("irMinPos: "<<irMinPos<<"   irMaxPos: "<<irMaxPos);
   
   // If we weren't given a valid pattern, then we can just stop here because we don't need to check
   // pattern size or reorder points
@@ -410,6 +410,7 @@ bool CalibImageTaylor::MakeFromImage(CVD::Image<CVD::byte> &im, CVD::ImageRef ir
   else
   {
     DrawImageGrid();
+    
   }
   
   return irSpan == irPatternSize;

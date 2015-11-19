@@ -52,6 +52,8 @@
 using namespace GVars3;
 using namespace TooN;
 
+bool bGrabPoints = false;
+
 PointCollector::PointCollector()
 : SystemBase("PointCollector",true, true)
 {
@@ -65,6 +67,7 @@ PointCollector::PointCollector()
   
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
+  GUI.RegisterCommand("KeyPress", GUICommandCallBack, this);
   GUI.RegisterCommand("GrabFrame", GUICommandCallBack, this);
   
   
@@ -86,8 +89,7 @@ PointCollector::PointCollector()
   // Main Menu
   GUI.ParseLine("Menu.AddMenuButton Root Reset Reset Root");
   
-    // Optimize Menu
-    
+  
   mNodeHandlePriv.param<int>("pattern_width", mirPatternSize[0],0);
   mNodeHandlePriv.param<int>("pattern_height", mirPatternSize[1],0);
   mNodeHandlePriv.param<double>("square_size", mdSquareSize,0);
@@ -145,10 +147,12 @@ void PointCollector::Run()
     mpGLWindow->DrawMenus();
     mpGLWindow->swap_buffers();
     mpGLWindow->HandlePendingEvents();
-    
+
+
     // GUI interface
     while(!mqCommands.empty())
     {
+
       GUICommandHandler(mqCommands.front().command, mqCommands.front().params);
       mqCommands.pop();
     }
@@ -172,6 +176,8 @@ std::string PointCollector::Track()
 
   static gvar3<std::string> gvsCurrentSubMenu("Menu.CurrentSubMenu", "", HIDDEN|SILENT); 
   bool bDrawKeyFrames = *gvsCurrentSubMenu == "View";
+
+
   
   if(bGotNewFrame)
   {
@@ -182,6 +188,7 @@ std::string PointCollector::Track()
     
     ros::Time start = ros::Time::now();
     int nCamNum = 1;
+    bool processedCamera[2] = {0}; //TODO: Generalize to the total number of rig cameras
     
     // Go through all the images that we got
     for(ImageBWMap::iterator it = mmFramesBW.begin(); it != mmFramesBW.end(); it++, nCamNum++)
@@ -190,6 +197,7 @@ std::string PointCollector::Track()
       
       // If this tracker has not yet found a checkerboard
       pTracker->TrackFrame(it->second, timestamp, !bDrawKeyFrames, true);
+      //std::cout<<pTracker->meCheckerboardStage << std::endl;
       
       
       // Print sequential number as overlay
@@ -198,8 +206,35 @@ std::string PointCollector::Track()
       std::stringstream ss;
       ss<<"#"<<nCamNum;
       mpGLWindow->PrintString(irOffset + CVD::ImageRef(10,40), ss.str(), 10);
+
+      //if(pTracker->meCheckerboardStage == TrackerCalib::CHECKERBOARD_SECOND_STAGE)
+      //{
+      //  ROS_INFO("found board");
+     // }
       
+      bool foundGrid = pTracker->foundGridPattern;
+
+      if(foundGrid)
+        ROS_INFO_STREAM("camera " <<  pTracker->mCamName << " found a grid");
+
+      if(bGrabPoints && foundGrid && !processedCamera[nCamNum]) //if we've triggered to grab points, the camera has found a grid, and we haven't already processed this camera 
+      {
+      //std::string  CamName = pTracker->mCamName; 
+      //TrackerCalib* pFirstTracker = mmTrackers.begin()->second;
+      ROS_INFO_STREAM("computing points and tracker pose for " << pTracker->mCamName);
+        
+        // Call map maker's init from calib image
+      bool bSuccess = mpMapMaker->ComputeGridPoints(*(pTracker->mpCalibImage), mdSquareSize, pTracker->mCamName, pTracker->mpCurrentMKF->mse3BaseFromWorld);
+      
+      //reset after all info has been dumped
+      mpMapMaker->RequestReset();
+      //flag that we've serviced this camera
+      processedCamera[nCamNum] = true;
+
+      }
     }
+
+    bGrabPoints = false;
     
     qTotalDurations.push_back(ros::Time::now() - start);
     if(qTotalDurations.size() > nMaxQueueSize)
@@ -222,43 +257,16 @@ std::string PointCollector::Track()
 // Deals with user interface commands
 void PointCollector::GUICommandHandler(std::string command, std::string params) 
 {
+
+  std::cout<<command<<std::endl;
+
   if(command=="exit" || command=="quit")
   {
     mbDone = true;
     return;
   }
   
-  if(command=="ShowNextKeyFrame")
-  {
-    mpKeyFrameViewer->Next();
-    return;
-  }
-  
-  if(command=="ShowPrevKeyFrame")
-  {
-    mpKeyFrameViewer->Prev();
-    return;
-  }
-  
-  if(command=="Optimize")
-  {
-    mpMapMaker->PauseRun();
-    if(!mpMapMaker->CalibInit())
-    {
-      mpMapMaker->ResumeRun();
-      GUI.ParseLine("Menu.ShowMenu Root");  // kick it back to root menu
-    }
-      
-    return;
-  }
-  
-  if(command=="GrabMore")
-  {
-    mpMapMaker->ResumeRun();
-    return;
-  }
-  
-  if(command=="Reset")
+   if(command=="Reset")
   {
     mpMapMaker->RequestReset();
     
@@ -273,17 +281,12 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
   {
     if(params == "Space")
     {
-      for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
-        it->second->RequestInit(false);
+      //for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
+       // it->second->RequestInit(false);
+      ROS_INFO("Pressed Space");
+      bGrabPoints = true;
     }
-    else if(params == "r")
-    {
-      mpMapMaker->RequestReset();
-      
-      for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
-        it->second->Reset(false);
-        
-    }
+    
     else if(params == "q" || params == "Escape")
     {
       mbDone = true;

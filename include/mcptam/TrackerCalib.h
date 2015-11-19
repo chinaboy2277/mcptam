@@ -147,6 +147,8 @@ protected:
   TooN::Vector<4> v4RunningColor;   ///< GUI border color for when system is tracking/running
   TooN::Vector<4> v4LostColor;      ///< GUI border color for when lost
   TooN::Vector<4> v4InactiveColor;  ///< GUI border color for when the tracker is inactive
+
+  bool foundGridPattern;            /// flag to show when the tracker has found a grid pattern
   
   // PoseCalibrator is pretty intimately tied to TrackerCalib, it manipulates a lot of its internal data directly. Ideally, TrackerCalib
   // would be rewritten as its own class, separate from Tracker, and its interface to PoseCalibrator would be more well defined.

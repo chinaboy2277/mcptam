@@ -216,8 +216,8 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
   // Get the updated pose, tracker will initialize with this
   se3TrackerPose = pKF->mse3CamFromWorld;
   
-  ROS_INFO_STREAM("MapMakerCalib: Made initial map with " << mMap.mlpPoints.size() << " points.");
-  ROS_INFO_STREAM("MapMakerCalib: tracker pose: "<<se3TrackerPose);
+  ROS_INFO_STREAM("ComputeGridPoints: Found crid with " << mMap.mlpPoints.size() << " points.");
+  ROS_INFO_STREAM("ComputeGridPoints: tracker pose: "<<se3TrackerPose);
   
   mState = MM_RUNNING;   // not doing anything special for initialization (unlike MapMaker)
   mMap.mbGood = true;
@@ -225,6 +225,114 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
   return true; 
 }
 
+
+bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose)
+{
+  // Create a new MKF
+  MultiKeyFrame *pMKF = new MultiKeyFrame;
+  
+  pMKF->mse3BaseFromWorld = calibImage.mse3CamFromWorld; // set mkf pose to be pose from tracker
+  pMKF->mse3BaseFromWorld.get_translation() *= dSquareSize;   // scale it
+  pMKF->mbFixed = false;
+ 
+  // Create a new KF (there will only be one for now)
+  KeyFrame *pKF = new KeyFrame(pMKF, cameraName);
+  pMKF->mmpKeyFrames[cameraName] = pKF;
+  
+  pKF->mse3CamFromWorld = pMKF->mse3BaseFromWorld;  // same as parent MKF
+  pKF->mse3CamFromBase = SE3<>(); // set relative pose to identity;
+  pKF->mbActive = true;
+
+  pKF->MakeKeyFrame_Lite(calibImage.mImage, true);
+  pKF->MakeKeyFrame_Rest();
+
+  // Create MapPoints where the calib image corners are
+  for(int l=0; l < 1; ++l)
+  {
+    if(l >= 1)
+      break;
+      
+    int nLevelScale = LevelScale(l);
+    
+    for(unsigned i=0; i < calibImage.mvGridCorners.size(); ++i)
+    {
+      MapPoint *pNewPoint = new MapPoint;
+      pNewPoint->mv3WorldPos.slice<0,2>() = dSquareSize * CVD::vec(calibImage.mvGridCorners[i].mirGridPos);
+      pNewPoint->mv3WorldPos[2] = 0.0;  // on z=0 plane
+      pNewPoint->mbFixed = true;  // the calibration pattern is fixed
+      pNewPoint->mbOptimized = true; // since it won't move it's already in its optimal location
+      
+      // Patch source stuff:
+      pNewPoint->mpPatchSourceKF = pKF;
+      pNewPoint->mnSourceLevel = l;
+      pNewPoint->mv3Normal_NC = makeVector( 0,0,-1);
+      
+      Vector<2> v2RootPos = calibImage.mvGridCorners[i].mParams.v2Pos;
+      
+      // Same code as in MapMakerServerBase::AddPointEpipolar
+      pNewPoint->mirCenter = CVD::ir_rounded(LevelNPos(v2RootPos, l));
+      pNewPoint->mv3Center_NC = mmCameraModels[cameraName].UnProject(v2RootPos); 
+      pNewPoint->mv3OneRightFromCenter_NC = mmCameraModels[cameraName].UnProject(v2RootPos + CVD::vec(CVD::ImageRef(nLevelScale,0))); 
+      pNewPoint->mv3OneDownFromCenter_NC  = mmCameraModels[cameraName].UnProject(v2RootPos + CVD::vec(CVD::ImageRef(0,nLevelScale))); 
+        
+      normalize(pNewPoint->mv3Center_NC);
+      normalize(pNewPoint->mv3OneDownFromCenter_NC);
+      normalize(pNewPoint->mv3OneRightFromCenter_NC);
+      
+      pNewPoint->RefreshPixelVectors();
+      mMap.mlpPoints.push_back(pNewPoint);
+      
+      // Create a measurement of the point
+      Measurement* pMeas = new Measurement;
+      pMeas->eSource = Measurement::SRC_ROOT;
+      pMeas->v2RootPos = v2RootPos;
+      pMeas->nLevel = l;
+      pMeas->bSubPix = true;
+      pKF->mmpMeasurements[pNewPoint] = pMeas;
+
+      pNewPoint->mMMData.spMeasurementKFs.insert(pKF);
+    }
+  }
+  
+  mMap.mlpMultiKeyFrames.push_back(pMKF);
+  mBundleAdjuster.SetNotConverged();
+  
+  int nSanityCounter = 0;
+  std::vector<std::pair<KeyFrame*, MapPoint*> > vOutliers;
+     
+  while(!mBundleAdjuster.ConvergedFull())
+  {
+    mBundleAdjuster.BundleAdjustAll(vOutliers);
+    if(ResetRequested() || nSanityCounter > 5)
+    {
+      ROS_WARN("Dumping map to map_after.dat");
+      DumpToFile("map_after.dat");
+      ROS_ERROR("MapMakerCalib: Exceeded sanity counter or reset requested, bailing");
+      return false;
+    }
+      
+    nSanityCounter++;
+  }
+  
+  // Don't allow any outliers when we're finding grid points, all of the calibration points turned MapPoints
+  // should have been found
+  if(vOutliers.size() > 0)
+  {
+    ROS_ERROR("MapMakerCalib: Found outliers in initialization, bailing");
+    return false;
+  }
+     
+  // Get the updated pose, tracker will initialize with this
+  se3TrackerPose = pKF->mse3CamFromWorld;
+  
+  ROS_INFO_STREAM("MapMakerCalib: Made initial map with " << mMap.mlpPoints.size() << " points.");
+  ROS_INFO_STREAM("MapMakerCalib: tracker pose: "<<std::endl<<se3TrackerPose);
+  
+  mState = MM_RUNNING;   // not doing anything special for initialization (unlike MapMaker)
+  mMap.mbGood = true;
+  
+  return true; 
+}
 // Removes MultiKeyFrames from the Map if it does/doesn't have a certain camera
 void MapMakerCalib::RemoveMultiKeyFrames(std::string camName, bool bShouldHave)
 {

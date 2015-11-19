@@ -143,6 +143,7 @@ public:
   TooN::SE3<> mse3CamFromWorldNew;     ///< The new pose of the image, used for testing optimization step success
   CVD::Image<CVD::byte> mImage;        ///< The image being worked on
   std::vector<CalibGridCorner> mvGridCorners;  ///< Vector of checkerboard corner structs
+                       /// did we find the grid in the image?
   
   // Static members
   static int snCornerPatchSize;       ///< Size of the patch to find a corner within

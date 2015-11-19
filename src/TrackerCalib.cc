@@ -346,6 +346,12 @@ void TrackerCalib::TrackFrame(CVD::Image<CVD::byte>& imFrame, ros::Time timestam
   {
     meCheckerboardStage = CHECKERBOARD_FIRST_STAGE;
     bool bGood = mpCalibImage->MakeFromImage(imFrame, mirPatternSize);  // fill calib image data
+
+    if(bGood)
+      foundGridPattern=true;
+    else
+      foundGridPattern=false;
+
     if(bGood && mbInitRequested) 
     {
       FinishCalibImagePose();

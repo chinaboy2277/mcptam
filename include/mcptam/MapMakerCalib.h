@@ -79,6 +79,14 @@ public:
    *  @param [in,out] se3TrackerPose The pose of the tracker, is updated after initialization performs bundle adjustment
    *  @return Did initialization succeed?  */
   bool InitFromCalibImage(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose);
+
+  /** @brief computes the location of the checker grid points and the tracker position using bundle adjustment
+   *  @param calibImage The CalibImageTaylor used with the checker pattern
+   *  @param dSquareSize The real-world edge length of the checkerboard squares
+   *  @param cameraName The name of the camera that provided the image
+   *  @param [in,out] se3TrackerPose The pose of the tracker, is updated after bundle adjustment
+   *  @return Did it succeed?  */
+  bool ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose);
   
   /** @brief Cleans up the map and gets it ready for calibration.
    * 
