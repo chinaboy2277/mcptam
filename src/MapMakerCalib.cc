@@ -44,6 +44,7 @@
 #include <mcptam/LevelHelpers.h>
 #include <geometry_msgs/PoseArray.h>
 #include <TooN/wls.h>
+#include <fstream>
 
 using namespace TooN;
 
@@ -228,6 +229,17 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
 
 bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose)
 {
+
+  //open up a file stream to dump the grid points
+  std::string filename = "/home/adas/mcptam_output/gridDump.txt";
+  std::ofstream ofs(filename.c_str());
+  
+  if(!ofs.good())
+  {
+    ROS_ERROR_STREAM("Couldn't open "<<filename<<" to write cameras");
+    return false;
+  }
+
   // Create a new MKF
   MultiKeyFrame *pMKF = new MultiKeyFrame;
   
@@ -253,6 +265,8 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
       break;
       
     int nLevelScale = LevelScale(l);
+
+    ofs<<"gridpoints:" <<std::endl;
     
     for(unsigned i=0; i < calibImage.mvGridCorners.size(); ++i)
     {
@@ -261,6 +275,10 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
       pNewPoint->mv3WorldPos[2] = 0.0;  // on z=0 plane
       pNewPoint->mbFixed = true;  // the calibration pattern is fixed
       pNewPoint->mbOptimized = true; // since it won't move it's already in its optimal location
+
+
+      //print out the grid point to the file
+      ofs<< pNewPoint->mv3WorldPos[0] << " " << pNewPoint->mv3WorldPos[1] << " " << pNewPoint->mv3WorldPos[2] << " " ;
       
       // Patch source stuff:
       pNewPoint->mpPatchSourceKF = pKF;
@@ -290,6 +308,9 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
       pMeas->bSubPix = true;
       pKF->mmpMeasurements[pNewPoint] = pMeas;
 
+      //print out point measurement on image plane
+      ofs<<pMeas->v2RootPos[0] << " " << pMeas->v2RootPos[1] << " " <<std::endl;
+
       pNewPoint->mMMData.spMeasurementKFs.insert(pKF);
     }
   }
@@ -305,8 +326,6 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
     mBundleAdjuster.BundleAdjustAll(vOutliers);
     if(ResetRequested() || nSanityCounter > 5)
     {
-      ROS_WARN("Dumping map to map_after.dat");
-      DumpToFile("map_after.dat");
       ROS_ERROR("MapMakerCalib: Exceeded sanity counter or reset requested, bailing");
       return false;
     }
@@ -324,9 +343,12 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
      
   // Get the updated pose, tracker will initialize with this
   se3TrackerPose = pKF->mse3CamFromWorld;
+
+  ofs<<"tmatrix:" <<std::endl;
+  ofs<<se3TrackerPose<< std::endl;
   
-  ROS_INFO_STREAM("MapMakerCalib: Made initial map with " << mMap.mlpPoints.size() << " points.");
-  ROS_INFO_STREAM("MapMakerCalib: tracker pose: "<<std::endl<<se3TrackerPose);
+  ROS_INFO_STREAM("Point Collector: Made grid with " << mMap.mlpPoints.size() << " points.");
+  ROS_INFO_STREAM("Point Collector: tracker pose: "<<std::endl<<se3TrackerPose);
   
   mState = MM_RUNNING;   // not doing anything special for initialization (unlike MapMaker)
   mMap.mbGood = true;

@@ -283,8 +283,11 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
     {
       //for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
        // it->second->RequestInit(false);
-      ROS_INFO("Pressed Space");
+      ROS_INFO("Capturing Grid Points");
       bGrabPoints = true;
+
+      //dump the camera params to a file
+      DumpCamerasToFile("/home/adas/mcptam_output/camparams.txt");
     }
     
     else if(params == "q" || params == "Escape")
