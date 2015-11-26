@@ -388,12 +388,23 @@ class EdgeChainMeas : public g2o::BaseMultiEdge<2, TooN::Vector<2> >
       TooN::Vector<3> v3Global = pPointVertex->estimateInGlobalCartesian();
       TooN::Vector<3> v3Cam = se3CfW * v3Global;
       TooN::Vector<2> v2Image = _camera.Project(v3Cam);
+
+      std::cout<< v3Global << " " << _measurement << " " << v2Image << std::endl;
+
+      //ARUN
+      //ROS_INFO_STREAM("Compute Error: point vertex:");
+      //ROS_INFO_STREAM(v3Global);
+      //ROS_INFO_STREAM("Compute Error: camFromWorld:");
+      //ROS_INFO_STREAM(se3CfW);
     
       _m2CamDerivs = _camera.GetProjectionDerivs();
               
       TooN::Vector<2> v2Error = _measurement - v2Image;
       _error(0) = v2Error[0];
       _error(1) = v2Error[1];
+
+      //ROS_INFO_STREAM("Compute Error: ERROR:");
+      //ROS_INFO_STREAM(v2Error);
     }
     
     /// Get the "score" for this measurement. In a simple implementation this would just be the error squared, but
