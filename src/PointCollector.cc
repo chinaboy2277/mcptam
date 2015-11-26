@@ -43,6 +43,7 @@
 #include <mcptam/Utility.h>
 #include <mcptam/OpenGL.h>
 #include <mcptam/Map.h>
+#include <mcptam/PanTiltControl.h>
 #include <gvars3/instances.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
@@ -53,8 +54,9 @@ using namespace GVars3;
 using namespace TooN;
 
 bool bGrabPoints = false;
+double pan_tilt_angle_increment = 0.09; //in rads, about 5 degrees
 
-PointCollector::PointCollector()
+PointCollector::PointCollector(ros::NodeHandle &nodehandle)
 : SystemBase("PointCollector",true, true)
 {
   if(mpVideoSourceMulti->GetNumGroups() != 1)
@@ -64,6 +66,14 @@ PointCollector::PointCollector()
     ros::shutdown();
     return;
   }
+
+  //hook up the ROS nodehandle
+ 
+  nh = nodehandle;
+
+  //setup pan tilt control object
+
+  PTC = new PanTiltControl(nh,"ptu/state", "ptu/cmd");
   
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
@@ -258,8 +268,7 @@ std::string PointCollector::Track()
 void PointCollector::GUICommandHandler(std::string command, std::string params) 
 {
 
-  std::cout<<command<<std::endl;
-
+  
   if(command=="exit" || command=="quit")
   {
     mbDone = true;
@@ -278,7 +287,10 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
   
   // KeyPress commands are issued by GLWindow
   if(command=="KeyPress")
-  {
+   {
+
+    std::cout<<params<<std::endl;
+
     if(params == "Space")
     {
       //for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
@@ -294,69 +306,50 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
     {
       mbDone = true;
     }
-    else
+
+    //keypresses for moving ptu unit 
+    else if(params == "i" ) //tilt up
     {
-      int nResetNum = atoi(params.c_str());
-      
-      // Only cameras #2 and greater can be reset individually. If you tried to 
-      // reset camera #1, it would destroy the fixed points extracted
-      // from the checkerboard, and calibration would be impossible.
-      
-      if(nResetNum > 1)  // reset the corresponding tracker
-      {
-        TrackerCalibPtrMap::iterator it = std::next(mmTrackers.begin(), nResetNum-1);
-        TrackerCalib* pTracker = it->second;
-        std::string camName = it->first;
-        ROS_INFO_STREAM("Resetting "<<camName<<" tracker");
-        pTracker->Reset(false);
-        mpMapMaker->PauseRun();
-        mpMapMaker->RemoveMultiKeyFrames(camName, false);
-        mpMapMaker->ResumeRun();
-      }
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double tilt_angle_setpoint = current_tilt_angle_setpoint + pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+
     }
-    return;
-  }
-  
-  if(command=="InitTracker")
-  {
-    for(TrackerCalibPtrMap::iterator it = mmTrackers.begin(); it != mmTrackers.end(); it++)
-        it->second->RequestInit(false);
-        
-    return;
-  }
-  
-  if(command=="SaveCalib")
-  {
-    mbDone = mpVideoSourceMulti->SavePoses(mmFinalPoses);
-    
-    // If we want to output poses for processing in another program do it now
-    std::string poseFileName;
-    if(mNodeHandlePriv.getParam("pose_out_file", poseFileName))
+    else if(params == "k" ) //tilt down
     {
-      // Write kf poses to file
-      std::ofstream file(poseFileName.c_str());
-      if(!file.is_open())
-      {
-        ROS_ERROR_STREAM("Could not open "<<poseFileName<<" for writing poses");
-      }
-      else
-      {
-        ROS_INFO_STREAM("Writing poses to "<<poseFileName);
-        
-        for(SE3Map::iterator it = mmFinalPoses.begin(); it != mmFinalPoses.end(); it++)
-        {
-          std::string camName = it->first;
-          TooN::SE3<> se3Pose = (it->second).inverse();
-          file<<camName<<std::endl;
-          file<<se3Pose<<std::endl;
-        }
-        file.close();
-      }
+        double current_pan_angle_setpoint;;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double tilt_angle_setpoint = current_tilt_angle_setpoint - pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
     }
+    else if(params == "j" ) //pan left
+    {
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double pan_angle_setpoint = current_pan_angle_setpoint + pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+
       
+    }
+    else if(params == "l" ) //pan right
+    {
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double pan_angle_setpoint = current_pan_angle_setpoint - pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+      
+    }
+
+
+
     return;
   }
-  
+      
   ROS_FATAL_STREAM("System: Unhandled command in GUICommandHandler: " << command);
   ros::shutdown();
 }

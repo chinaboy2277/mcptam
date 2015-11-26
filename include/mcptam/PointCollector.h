@@ -44,6 +44,7 @@
 #ifndef __POINT_COLLECTOR_H
 #define __POINT_COLLECTOR_H
 
+#include <mcptam/PanTiltControl.h>
 #include <mcptam/SystemBase.h>
 #include <mcptam/Types.h>
 #include <mcptam/Reset.h>
@@ -66,7 +67,7 @@ class PointCollector : public SystemBase
 public:
 
   /// Creates objects, sets up GUI
-  PointCollector();
+  PointCollector(ros::NodeHandle &nh);
   
   /// Destructor
   ~PointCollector();
@@ -136,6 +137,10 @@ private:
   std::vector<TrackerCalib*> mvInitialized;   ///< Which CalibratorTrackers have been initialized
   
   ros::ServiceServer mResetSystemServer;  ///< Service to allow system reset, needed for map maker
+
+  ros::NodeHandle nh;                     /// pointer to nodehandle so we can set up subscribers/publishers if required
+
+  PanTiltControl *PTC;                     /// Pan Tilt Control object
 };
 
 #endif

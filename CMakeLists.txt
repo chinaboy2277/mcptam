@@ -97,7 +97,7 @@ add_executable(point_collector src/MainPointCollector.cc src/GLWindow2.cc src/GL
                               src/TrackerCalib.cc src/MapMakerCalib.cc src/MapMaker.cc src/MapMakerBase.cc src/MapMakerClientBase.cc src/MapMakerServerBase.cc
                               src/TaylorCamera.cc src/KeyFrame.cc src/MapPoint.cc src/Map.cc src/SmallBlurryImage.cc src/ShiTomasi.cc  
                               src/PatchFinder.cc src/Relocaliser.cc src/Tracker.cc src/KeyFrameViewer.cc
-                              src/BundleAdjusterBase.cc src/BundleAdjusterSingle.cc src/BundleAdjusterCalib.cc src/ChainBundle.cc src/MiniPatch.cc)
+                              src/BundleAdjusterBase.cc src/BundleAdjusterSingle.cc src/BundleAdjusterCalib.cc src/ChainBundle.cc src/MiniPatch.cc src/PanTiltControl.cc)
 add_dependencies(point_collector ${PROJECT_NAME}_gencpp)
 target_link_libraries(point_collector ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${SUITESPARSE_LIBRARIES} ${CVD_LIBRARY} ${OPENGL_gl_LIBRARY} ${OpenCV_LIBS} ${GVars3_LIBRARIES} ${G2O_STUFF_LIBRARY} ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CHOLMOD} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
                                      

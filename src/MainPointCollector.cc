@@ -82,7 +82,7 @@ int main(int argc, char** argv)
   
   try
   {
-    PointCollector calib;
+    PointCollector calib(nh);
     calib.Run();
   }
   catch(CVD::Exceptions::All e)
