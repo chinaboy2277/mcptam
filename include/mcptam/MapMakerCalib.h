@@ -85,8 +85,10 @@ public:
    *  @param dSquareSize The real-world edge length of the checkerboard squares
    *  @param cameraName The name of the camera that provided the image
    *  @param [in,out] se3TrackerPose The pose of the tracker, is updated after bundle adjustment
+   *  @param pan_angle The pan angle of the gimbal, for file output
+   *  @param tilt_angle The tilt angle of the gimbal, for file output
    *  @return Did it succeed?  */
-  bool ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose);
+  bool ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose, double pan_angle, double tilt_angle, int capture_index);
   
   /** @brief Cleans up the map and gets it ready for calibration.
    * 
@@ -147,7 +149,8 @@ protected:
   
   int mnSavedRunState;  ///< Previous map state for pausing and resuming optimization
   bool mbPaused;   ///< Is the mapmaker thread paused?
-  
+
+   
 };
 
 #endif

@@ -62,6 +62,7 @@ MapMakerCalib::MapMakerCalib(Map& map, TaylorCameraMap& cameras, BundleAdjusterB
   mnSavedRunState = -1;
   mbPaused = false;
   meCalibState = CALIB_INVALID;
+ 
 };
 
 MapMakerCalib::~MapMakerCalib()
@@ -217,8 +218,8 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
   // Get the updated pose, tracker will initialize with this
   se3TrackerPose = pKF->mse3CamFromWorld;
   
-  ROS_INFO_STREAM("ComputeGridPoints: Found crid with " << mMap.mlpPoints.size() << " points.");
-  ROS_INFO_STREAM("ComputeGridPoints: tracker pose: "<<se3TrackerPose);
+  ROS_INFO_STREAM("MapMakerCalib: Initialized map with " << mMap.mlpPoints.size() << " points.");
+  ROS_INFO_STREAM("MapMakerCalib: tracker pose: "<<se3TrackerPose);
   
   mState = MM_RUNNING;   // not doing anything special for initialization (unlike MapMaker)
   mMap.mbGood = true;
@@ -227,11 +228,17 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
 }
 
 
-bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose)
+bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose, double pan_angle, double tilt_angle, int capture_index)
 {
 
   //open up a file stream to dump the grid points
-  std::string filename = "/home/adas/mcptam_output/gridDump.txt";
+  std::string file_prefix = "/home/adas/mcptam_output/";
+
+  //compute the file number (assumes 2 cameras)
+
+ 
+
+  std::string filename = file_prefix + std::to_string(capture_index) + "_" + cameraName;
   std::ofstream ofs(filename.c_str());
   
   if(!ofs.good())
@@ -345,7 +352,11 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
   se3TrackerPose = pKF->mse3CamFromWorld;
 
   ofs<<"tmatrix:" <<std::endl;
-  ofs<<se3TrackerPose<< std::endl;
+  ofs<<se3TrackerPose;
+  ofs<< "0 0 0 1 " << std::endl;
+  ofs<<"ptangles:" <<std::endl;
+  ofs<< pan_angle << " " << tilt_angle << std::endl;
+  ofs<< "end:";
   
   ROS_INFO_STREAM("Point Collector: Made grid with " << mMap.mlpPoints.size() << " points.");
   ROS_INFO_STREAM("Point Collector: tracker pose: "<<std::endl<<se3TrackerPose);

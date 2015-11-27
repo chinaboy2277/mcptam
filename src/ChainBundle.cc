@@ -389,7 +389,7 @@ class EdgeChainMeas : public g2o::BaseMultiEdge<2, TooN::Vector<2> >
       TooN::Vector<3> v3Cam = se3CfW * v3Global;
       TooN::Vector<2> v2Image = _camera.Project(v3Cam);
 
-      std::cout<< v3Global << " " << _measurement << " " << v2Image << std::endl;
+      //std::cout<< v3Global << " " << _measurement << " " << v2Image << std::endl;
 
       //ARUN
       //ROS_INFO_STREAM("Compute Error: point vertex:");

@@ -18,20 +18,20 @@ PanTiltControl::PanTiltControl(ros::NodeHandle &nh, std::string sub_name, std::s
  //setup subscribers and publishers
 
  ROS_INFO_STREAM("PanTiltControl:: setting up subscriber for topic: " << sub_name);
- angle_sub_ = nh.subscribe(sub_name, 1000, &PanTiltControl::JointAngleCallback, this);
+ angle_sub_ = nh.subscribe("/ptu/state", 1000, &PanTiltControl::JointAngleCallback, this);
  ROS_INFO_STREAM("PanTiltControl:: setting up publisher for topic: " << pub_name);
  angle_pub_ = nh.advertise<sensor_msgs::JointState>(pub_name, 1000);
 
 }
 
-void PanTiltControl::JointAngleCallback(const sensor_msgs::JointState::ConstPtr& msg)
+void PanTiltControl::JointAngleCallback(const sensor_msgs::JointState & msg)
 {
 	//service the callback
-	pan_angle_current_ = msg->position[0];
-	tilt_angle_current_ = msg->position[1];
-	pan_velocity_current_ = msg->velocity[0];
-	tilt_velocity_current_ = msg->velocity[1];
-
+	pan_angle_current_ = msg.position[0];
+	tilt_angle_current_ = msg.position[1];
+	pan_velocity_current_ = msg.velocity[0];
+	tilt_velocity_current_ = msg.velocity[1];
+	
 }
 
 void PanTiltControl::get_pan_tilt_angle_current(double &pan, double &tilt)

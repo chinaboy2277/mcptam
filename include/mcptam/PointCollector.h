@@ -141,6 +141,7 @@ private:
   ros::NodeHandle nh;                     /// pointer to nodehandle so we can set up subscribers/publishers if required
 
   PanTiltControl *PTC;                     /// Pan Tilt Control object
+  int capture_index;                  /// index that keeps track of number of times we've succeessfully outputted data
 };
 
 #endif

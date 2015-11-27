@@ -47,7 +47,7 @@ private:
  ros::Publisher	angle_pub_; 		///publisher for joint angles
 
  //functions
- void JointAngleCallback(const sensor_msgs::JointState::ConstPtr& msg); 	///callback which sets the current joint angles
+ void JointAngleCallback(const sensor_msgs::JointState & msg); 	///callback which sets the current joint angles
 
 
 

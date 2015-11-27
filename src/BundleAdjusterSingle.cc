@@ -118,8 +118,8 @@ int BundleAdjusterSingle::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std
       v3Pos = point.mv3WorldPos;
       vPoses[0] = nWorldID;
       //ARUN
-      ROS_INFO_STREAM("bundle adjust: initalized map frame, first point is:");
-      ROS_INFO_STREAM(v3Pos);
+      //ROS_INFO_STREAM("bundle adjust: initalized map frame, first point is:");
+      //ROS_INFO_STREAM(v3Pos);
     }
     else
     {
