@@ -1,0 +1,26 @@
+sudo: required
+dist: trusty
+
+language:
+    c++
+
+compiler:
+    - gcc
+
+before_script:
+    - sudo bash scripts/ros_install.bash
+    - sudo bash scripts/ci_install.bash
+
+script:
+    - echo "done!"
+
+branches:
+    only:
+        - dh-calibration
+
+notifications:
+    recipients:
+        - arun.das.uwaterloo@gmail.com
+    email:
+        on_success: change
+        on_failure: always
