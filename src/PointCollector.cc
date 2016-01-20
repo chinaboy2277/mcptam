@@ -55,7 +55,7 @@ using namespace GVars3;
 using namespace TooN;
 
 bool bGrabPoints = false;
-double pan_tilt_angle_increment = 0.1; //in rads, about 5 degrees
+double pan_tilt_angle_increment = 0.174533; //in rads, about 10 degrees
 
 PointCollector::PointCollector(ros::NodeHandle &nodehandle)
 : SystemBase("PointCollector",true, true)
@@ -243,9 +243,12 @@ std::string PointCollector::Track()
         TrackerCalib* pCurrentTrackerFrame = vTrackers[i];
         double pan_angle;
         double tilt_angle;
+        double sigma_squared_error;
         PTC->get_pan_tilt_angle_current(pan_angle,tilt_angle);
         // Call map maker's ComputeGridPoints
+       // ROS_INFO_STREAM("Computing Points for camera: " << pCurrentTrackerFrame->mCamName);
         bool bSuccess = mpMapMaker->ComputeGridPoints(*(pCurrentTrackerFrame->mpCalibImage), mdSquareSize, pCurrentTrackerFrame->mCamName, pCurrentTrackerFrame->mpCurrentMKF->mse3BaseFromWorld,pan_angle,tilt_angle, capture_index);
+       	ros::Duration(0.5).sleep(); // sleep for half a second
        //reset after all info has been dumped
         if(!bSuccess) //failure in getting tracker pose
           ROS_ERROR_STREAM("PointCollector: Failed to get tracker pose");

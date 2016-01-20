@@ -324,6 +324,8 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
   
   mMap.mlpMultiKeyFrames.push_back(pMKF);
   mBundleAdjuster.SetNotConverged();
+  mBundleAdjuster.UseTukey(true);
+  mBundleAdjuster.UseTwoStep(false);
   
   int nSanityCounter = 0;
   std::vector<std::pair<KeyFrame*, MapPoint*> > vOutliers;
