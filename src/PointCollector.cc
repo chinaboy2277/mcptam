@@ -376,6 +376,7 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
     //keypresses for moving ptu unit 
     else if(params == "i" ) //tilt up
     {
+        ROS_INFO_STREAM("p uppppppppppppppppppppppppp");
         double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
         PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);

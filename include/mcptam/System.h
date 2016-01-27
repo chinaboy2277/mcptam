@@ -49,6 +49,7 @@
 #define __SYSTEM_H
 
 #include <mcptam/SystemFrontendBase.h>
+#include <mcptam/PanTiltControl.h>
 //#include <ros/ros.h>
 
 class MapMaker;
@@ -60,7 +61,7 @@ class System : public SystemFrontendBase
 {
 public:
   /// Creates objects, sets up GUI
-  System();
+  System(ros::NodeHandle &nh);
   
   /// Destructor
   ~System();
@@ -81,6 +82,9 @@ protected:
   MapMaker* mpMapMaker;                   ///< Pointer to the standalone version of MapMaker
   BundleAdjusterMulti* mpBundleAdjuster;  ///< Pointer to the BundleAdjuster
   KeyFrameViewer *mpKeyFrameViewer;       ///< Pointer to the KeyFrameViewer
+  ros::NodeHandle nh;                     /// pointer to nodehandle so we can set up subscribers/publishers if required
+  PanTiltControl *PTC;                     /// Pan Tilt Control object
+
   
 };
 

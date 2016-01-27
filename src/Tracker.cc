@@ -49,6 +49,7 @@
 #include <mcptam/Map.h>
 #include <mcptam/Utility.h>
 #include <mcptam/TrackerState.h>
+#include <mcptam/PanTiltTransform.h>
 
 #include <cvd/utility.h>
 #include <cvd/gl_helpers.h>
@@ -210,7 +211,7 @@ void Tracker::InitCurrentMKF(const SE3<>& pose)
   {
     std::string camName = mvAllCamNames[i];
     KeyFrame* pKF = new KeyFrame(mpCurrentMKF, camName);
-    pKF->mse3CamFromBase = mmFixedPoses[camName];
+    //pKF->mse3CamFromBase = mmFixedPoses[camName];
     mpCurrentMKF->mmpKeyFrames[camName] = pKF;
   }
   
@@ -406,6 +407,9 @@ void Tracker::TrackFrameSetup(ImageBWMap& imFrames, ros::Time timestamp, bool bD
 // TrackFrame is called by System with each incoming video frame.
 // It figures out what state the tracker is in, and calls appropriate internal tracking
 // functions. bDraw tells the tracker wether it should output any GL graphics
+
+int nFramesTracked = 0;
+
 void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 {
   ros::WallTime startTime;
@@ -422,11 +426,44 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
     mMessageForUser<<std::endl;
   }
   
+  nFramesTracked++;
   // Decide what to do - if there is a map, try to track the map ...
   if(mMap.mbGood)
   {
     if(!IsLost())  // .. but only if we're not lost!
     {
+
+
+      //todo (adas) test the extrinsic cal
+      Eigen::Matrix< double, 18, 1 > calibration_parameters;
+      calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
+    							0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
+
+     PanTiltTransform PTU(calibration_parameters);
+     PTU.set_pan_angle(1.5708);
+     PTU.set_tilt_angle(1.5708);
+     ROS_INFO_STREAM("calibration is: " << PTU.ComputeRigTransformation());
+
+      for(unsigned i=0; i < mvAllCamNames.size(); ++i)
+	  {
+	    std::string camName = mvAllCamNames[i];
+	    if(camName == "camera3")
+	    {
+	    	Vector<6> v6Motion;
+	    	v6Motion[2] = 0.5*sin((3.14/(60*6))*nFramesTracked);
+	    	mpCurrentMKF->mmpKeyFrames[camName]->mse3CamFromBase = SE3<>::exp(v6Motion) * mmFixedPoses[camName];
+
+	    }
+	    else
+	    {
+	    	mpCurrentMKF->mmpKeyFrames[camName]->mse3CamFromBase = mmFixedPoses[camName];
+
+	    }
+	    
+	  }
+
+	  UpdateCamsFromWorld();
+
       startTime = ros::WallTime::now();
       ApplyMotionModel(); 
       timingMsg.motion = (ros::WallTime::now() - startTime).toSec();     // 

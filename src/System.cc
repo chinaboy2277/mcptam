@@ -55,9 +55,17 @@
 using namespace GVars3;
 using namespace TooN;
 
-System::System()
+double pan_tilt_angle_increment = 0.174533; //in rads, about 10 degrees
+
+System::System(ros::NodeHandle &nodehandle)
 : SystemFrontendBase("mcptam", true)
 {
+
+  //hook up the ROS nodehandle
+  nh = nodehandle;
+  //init the PTU object
+  PTC = new PanTiltControl(nh,"/ptu/state", "/ptu/cmd");
+
   if(mpGLWindow)
   {
     // Register some commands with GVars, these commands will be triggered
@@ -389,6 +397,44 @@ void System::GUICommandHandler(std::string command, std::string params)
     else if(params == "a")
     {
       mpTracker->AddNext();
+    }
+
+    //keypresses for moving ptu unit 
+    else if(params == "i" ) //tilt up
+    {
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double tilt_angle_setpoint = current_tilt_angle_setpoint + pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+
+    }
+    else if(params == "k" ) //tilt down
+    {
+        double current_pan_angle_setpoint;;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double tilt_angle_setpoint = current_tilt_angle_setpoint - pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+    }
+    else if(params == "j" ) //pan left
+    {
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double pan_angle_setpoint = current_pan_angle_setpoint + pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+
+      
+    }
+    else if(params == "l" ) //pan right
+    {
+        double current_pan_angle_setpoint;
+        double current_tilt_angle_setpoint;
+        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        double pan_angle_setpoint = current_pan_angle_setpoint - pan_tilt_angle_increment;
+        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+      
     }
     
     return;
