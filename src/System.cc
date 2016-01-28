@@ -63,8 +63,7 @@ System::System(ros::NodeHandle &nodehandle)
 
   //hook up the ROS nodehandle
   nh = nodehandle;
-  //init the PTU object
-  PTC = new PanTiltControl(nh,"/ptu/state", "/ptu/cmd");
+  
 
   if(mpGLWindow)
   {
@@ -181,7 +180,9 @@ System::System(ros::NodeHandle &nodehandle)
   
   ImageBWMap masksMap = LoadMasks(); 
   mpTracker->SetMasks(masksMap);
-    
+
+ //init the PTU object
+  mpTracker->PTC = new PanTiltControl(nh,"/ptu/state", "/ptu/cmd");;   
   mbDone = false;
 }
 
@@ -305,7 +306,7 @@ void System::Run()
       GUICommandHandler(mqCommands.front().command, mqCommands.front().params);
       mqCommands.pop();
     }
-    
+    ros::spinOnce(); //spin to make sure we process callbacks
     mCallbackQueueROS.callAvailable();
   }
 }
@@ -404,26 +405,26 @@ void System::GUICommandHandler(std::string command, std::string params)
     {
         double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
-        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double tilt_angle_setpoint = current_tilt_angle_setpoint + pan_tilt_angle_increment;
-        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
 
     }
     else if(params == "k" ) //tilt down
     {
         double current_pan_angle_setpoint;;
         double current_tilt_angle_setpoint;
-        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double tilt_angle_setpoint = current_tilt_angle_setpoint - pan_tilt_angle_increment;
-        PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
     }
     else if(params == "j" ) //pan left
     {
         double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
-        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double pan_angle_setpoint = current_pan_angle_setpoint + pan_tilt_angle_increment;
-        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
 
       
     }
@@ -431,9 +432,9 @@ void System::GUICommandHandler(std::string command, std::string params)
     {
         double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
-        PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
+        mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double pan_angle_setpoint = current_pan_angle_setpoint - pan_tilt_angle_increment;
-        PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
       
     }
     

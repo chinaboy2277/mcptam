@@ -71,6 +71,8 @@ public:
    *  Acquires images, calls the tracker, and draws to the window. MapMaker runs
    *  in its own thread in the background, so we don't have to call it here */
   void Run();
+
+  //PanTiltControl *PTC;                     /// Pan Tilt Control object
   
 protected:
 
@@ -83,7 +85,7 @@ protected:
   BundleAdjusterMulti* mpBundleAdjuster;  ///< Pointer to the BundleAdjuster
   KeyFrameViewer *mpKeyFrameViewer;       ///< Pointer to the KeyFrameViewer
   ros::NodeHandle nh;                     /// pointer to nodehandle so we can set up subscribers/publishers if required
-  PanTiltControl *PTC;                     /// Pan Tilt Control object
+  
 
   
 };

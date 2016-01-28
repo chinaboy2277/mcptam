@@ -55,6 +55,7 @@
 #include <sensor_msgs/Image.h>
 #include <ros/assert.h>
 #include <boost/interprocess/streams/vectorstream.hpp>
+#include <Eigen/Core>
 
 // Don't pollute the global namespace
 namespace util{
@@ -153,6 +154,33 @@ inline TooN::SE3<> PoseMsgToSE3(geometry_msgs::Pose pose)
   se3Transform.get_rotation() = m3PoseRot;
   return se3Transform;
 }
+
+/** @brief Convert Eigen::Matrix4d into TooN::SE3<>
+ *  @param pose The pose to convert
+ *  @return The same pose in SE3 format */
+
+inline TooN::SE3<> Matrix4dToSE3(Eigen::Matrix4d pose)
+{
+  TooN::SE3<> se3Transform;
+  
+  // Fill in translation directly from Eigen Pise
+  se3Transform.get_translation() = TooN::makeVector(pose(0,3), pose(1,3), pose(2,3));
+  
+  //copy over the rotation
+  TooN::Matrix<3> m3PoseRot;
+  for(unsigned j=0; j < 3; j++)
+  {
+    for(unsigned i=0; i < 3; i++)
+    {
+      m3PoseRot[i][j] = pose(i,j);
+    }
+  }
+  
+  // Set the rotation and we're done
+  se3Transform.get_rotation() = m3PoseRot;
+  return se3Transform;
+}
+
 
 /** @brief Convert a TooN::SE3<> message into geometry_msgs::Pose
  *  @param se3Transform The SE3 pose to convert

@@ -58,6 +58,10 @@
 #include <TooN/wls.h>
 #include <TooN/SVD.h>
 
+//Eigen Includes
+#include <Eigen/Core>
+#include <Eigen/LU>
+
 #include <gvars3/instances.h>
 
 #include <opencv2/features2d/features2d.hpp>
@@ -83,6 +87,28 @@ double Tracker::sdTrackingQualityGood = 0.3;
 double Tracker::sdTrackingQualityBad = 0.13;
 int Tracker::snLostFrameThresh = 3;
 bool Tracker::sbCollectAllPoints = true;
+
+TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
+{
+    Eigen::Matrix< double, 18, 1 > calibration_parameters;
+    calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
+                            0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
+    PanTiltTransform PTU(calibration_parameters);
+
+    double pan;
+    double tilt;
+    PTC->get_pan_tilt_angle_current(pan,tilt);
+
+    ROS_INFO_STREAM("pan: " << pan << " tilt: " << tilt);
+
+    PTU.set_pan_angle(1.5708+pan);
+    PTU.set_tilt_angle(1.5708+tilt);
+    Eigen::Matrix4d cam2Cal = PTU.ComputeRigTransformation();
+    Eigen::Matrix4d cam2CalInv = cam2Cal.inverse();
+    TooN::SE3<> se3cam2Calibration = util::Matrix4dToSE3(cam2CalInv);
+
+    return se3cam2Calibration;
+}
 
 // The constructor mostly sets up interal reference variables
 // to the other classes..
@@ -116,6 +142,7 @@ Tracker::Tracker(Map &map, MapMakerClientBase &mapmaker, TaylorCameraMap &camera
   
   maskPub = mNodeHandlePrivate.advertise<sensor_msgs::Image>("mask", 1);
   timingPub = mNodeHandlePrivate.advertise<mcptam::TrackerTiming>("timing_tracker", 1);
+
 }
 
 Tracker::~Tracker()
@@ -211,7 +238,15 @@ void Tracker::InitCurrentMKF(const SE3<>& pose)
   {
     std::string camName = mvAllCamNames[i];
     KeyFrame* pKF = new KeyFrame(mpCurrentMKF, camName);
-    //pKF->mse3CamFromBase = mmFixedPoses[camName];
+    if(camName=="camera2")
+    {
+        pKF->mse3CamFromBase = GetCurrentCalibrationMatrix();
+    }
+    else
+    {
+        pKF->mse3CamFromBase = mmFixedPoses[camName];
+    }
+    
     mpCurrentMKF->mmpKeyFrames[camName] = pKF;
   }
   
@@ -410,6 +445,8 @@ void Tracker::TrackFrameSetup(ImageBWMap& imFrames, ros::Time timestamp, bool bD
 
 int nFramesTracked = 0;
 
+
+
 void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 {
   ros::WallTime startTime;
@@ -426,7 +463,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
     mMessageForUser<<std::endl;
   }
   
-  nFramesTracked++;
+  
   // Decide what to do - if there is a map, try to track the map ...
   if(mMap.mbGood)
   {
@@ -434,29 +471,21 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
     {
 
 
-      //todo (adas) test the extrinsic cal
-      Eigen::Matrix< double, 18, 1 > calibration_parameters;
-      calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
-    							0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
+      TooN::SE3<> se3cam2Calibration = GetCurrentCalibrationMatrix();
 
-     PanTiltTransform PTU(calibration_parameters);
-     PTU.set_pan_angle(1.5708);
-     PTU.set_tilt_angle(1.5708);
-     ROS_INFO_STREAM("calibration is: " << PTU.ComputeRigTransformation());
 
       for(unsigned i=0; i < mvAllCamNames.size(); ++i)
 	  {
 	    std::string camName = mvAllCamNames[i];
-	    if(camName == "camera3")
+	    if(camName == "camera2")
 	    {
-	    	Vector<6> v6Motion;
-	    	v6Motion[2] = 0.5*sin((3.14/(60*6))*nFramesTracked);
-	    	mpCurrentMKF->mmpKeyFrames[camName]->mse3CamFromBase = SE3<>::exp(v6Motion) * mmFixedPoses[camName];
+	    	mpCurrentMKF->mmpKeyFrames[camName]->mse3CamFromBase = se3cam2Calibration;
 
 	    }
 	    else
 	    {
 	    	mpCurrentMKF->mmpKeyFrames[camName]->mse3CamFromBase = mmFixedPoses[camName];
+            //ROS_INFO_STREAM("ext: " << camName<< " " << mmFixedPoses[camName]);
 
 	    }
 	    
@@ -465,7 +494,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 	  UpdateCamsFromWorld();
 
       startTime = ros::WallTime::now();
-      ApplyMotionModel(); 
+      //ApplyMotionModel(); 
       timingMsg.motion = (ros::WallTime::now() - startTime).toSec();     // 
       TrackMap();               //  These three lines do the main tracking work.
       UpdateMotionModel();      //

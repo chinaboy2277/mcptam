@@ -75,6 +75,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include <TooN/TooN.h>
 #include <ros/ros.h>
+#include <mcptam/PanTiltControl.h>
 
 class TrackerData;
 class Map;
@@ -195,7 +196,11 @@ public:
   /// Set the addnext flag to true if map is good and we are not lost, will add subsequent MKF to map
   /// regardless of other metrics
   void AddNext();
-  
+
+  TooN::SE3<> GetCurrentCalibrationMatrix();
+
+   PanTiltControl *PTC;                     /// <Pan Tilt Control object
+    
   // Static members
   static double sdRotationEstimatorBlur; ///< Amount of blur when constructing SmallBlurryImage
   static bool sbUseRotationEstimator; ///< Should pre-estimate the rotation using SmallBlurryImages
@@ -443,7 +448,8 @@ protected:
   ros::Publisher maskPub;   ///< Publisher for the camera image masks
   ros::Publisher timingPub;     ///< Publisher for the Tracker timing messages
   mcptam::TrackerTiming timingMsg;  ///< Message for the various timing sections of the Tracker
-  
+
+
   //testing
   bool mbAddNext;   ///< Add the next MKF now
   
