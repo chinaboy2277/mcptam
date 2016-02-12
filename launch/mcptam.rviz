@@ -4,9 +4,13 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /Grid1
         - /Tracker Pose1
+        - /Tracker Pose1/Status1
         - /Tracker Pose1/Frames1
+        - /PoseArray1
+        - /PoseArray1/Status1
       Splitter Ratio: 0.580537
     Tree Height: 595
   - Class: rviz/Selection
@@ -27,7 +31,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Map Points
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -49,25 +53,11 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Class: rviz/MarkerArray
-      Enabled: false
-      Marker Topic: /mcptam/map_mkfs_array
-      Name: Map Frames
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: false
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: false
-        camera1:
-          Value: true
-        camera2:
-          Value: true
-        vision_pose:
-          Value: true
+        All Enabled: true
         vision_world:
           Value: true
         world:
@@ -78,14 +68,8 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          vision_world:
-            camera1:
-              {}
-            camera2:
-              {}
-            vision_pose:
-              {}
+        vision_world:
+          {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -117,10 +101,17 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Arrow Length: 0.3
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: true
+      Name: PoseArray
+      Topic: /mcptam/map_mkfs_array
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: world
+    Fixed Frame: vision_world
     Frame Rate: 30
   Name: root
   Tools:
@@ -155,10 +146,10 @@ Visualization Manager:
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: -1.2248
+      Pitch: -0.7148
       Target Frame: vision_world
       Value: Orbit (rviz)
-      Yaw: 1.64402
+      Yaw: 1.46402
     Saved: ~
 Window Geometry:
   Displays:

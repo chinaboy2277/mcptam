@@ -45,6 +45,7 @@
 #include <mcptam/Utility.h>
 #include <mcptam/MapPoint.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <geometry_msgs/PoseArray.h>
 #include <ros/common.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -59,7 +60,7 @@ MapMakerBase::MapMakerBase(Map& map, bool bAdvertise)
   {
     mMapInfoPub = mNodeHandlePriv.advertise<mcptam::MapInfo>("map_info", 1, true);
     mMapPointsPub = mNodeHandlePriv.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("map_points", 1,true);
-    mMapMKFsPub = mNodeHandlePriv.advertise<visualization_msgs::MarkerArray>("map_mkfs_array", 1,true);
+    mMapMKFsPub = mNodeHandlePriv.advertise<geometry_msgs::PoseArray>("map_mkfs_array", 1,true);
   }
   
   Reset();
@@ -403,18 +404,40 @@ void MapMakerBase::PublishMapPoints()
 void MapMakerBase::PublishMapMKFs()
 {
   if(!mMapMKFsPub)
-    mMapMKFsPub = mNodeHandlePriv.advertise<visualization_msgs::MarkerArray>("map_mkfs_array", 1,true);
+    //mMapMKFsPub = mNodeHandlePriv.advertise<visualization_msgs::MarkerArray>("map_mkfs_array", 1,true);
+    mMapMKFsPub = mNodeHandlePriv.advertise<geometry_msgs::PoseArray>("map_mkfs_array", 1,true);
   
-  visualization_msgs::MarkerArray mkfsMsg;
-  
+  //visualization_msgs::MarkerArray mkfsMsg;
+  geometry_msgs::PoseArray mkfsMsg;
+  mkfsMsg.header.stamp = ros::Time(0);
+  mkfsMsg.header.frame_id = "vision_world";
+
   boost::mutex::scoped_lock lock(mMap.mMutex);
   
-  for(MultiKeyFramePtrList::iterator mkf_it = mMap.mlpMultiKeyFrames.begin(); mkf_it != mMap.mlpMultiKeyFrames.end(); ++mkf_it)
+  /*for(MultiKeyFramePtrList::iterator mkf_it = mMap.mlpMultiKeyFrames.begin(); mkf_it != mMap.mlpMultiKeyFrames.end(); ++mkf_it)
   {
     MultiKeyFrame& mkf = *(*mkf_it);
     visualization_msgs::Marker marker;
     MKFToMarker(mkf, marker);
     mkfsMsg.markers.push_back(marker);
+  }*/
+
+  for(MultiKeyFramePtrList::iterator mkf_it = mMap.mlpMultiKeyFrames.begin(); mkf_it != mMap.mlpMultiKeyFrames.end(); ++mkf_it)
+  {
+    MultiKeyFrame& mkf = *(*mkf_it);
+
+    for(KeyFramePtrMap::iterator kf_it = mkf.mmpKeyFrames.begin(); kf_it != mkf.mmpKeyFrames.end(); ++kf_it)
+	{
+		std::string camName = kf_it->first;
+    	KeyFrame& kfCurr = *(mkf.mmpKeyFrames[camName]);
+    	geometry_msgs::Pose kf_pose = util::SE3ToPoseMsg(kfCurr.mse3CamFromWorld.inverse());
+		mkfsMsg.poses.push_back(kf_pose);
+	}
+
+
+    //visualization_msgs::Marker marker;
+    //MKFToMarker(mkf, marker);
+    
   }
   
   mMapMKFsPub.publish(mkfsMsg);

@@ -198,6 +198,7 @@ public:
   void AddNext();
 
   TooN::SE3<> GetCurrentCalibrationMatrix();
+  TooN::SE3<> GetInterpolatedCalibrationMatrix(ros::Time int_time);
 
    PanTiltControl *PTC;                     /// <Pan Tilt Control object
     

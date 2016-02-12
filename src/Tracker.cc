@@ -88,6 +88,8 @@ double Tracker::sdTrackingQualityBad = 0.13;
 int Tracker::snLostFrameThresh = 3;
 bool Tracker::sbCollectAllPoints = true;
 
+bool stopMKFAdd = false;
+
 TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
 {
     Eigen::Matrix< double, 18, 1 > calibration_parameters;
@@ -95,9 +97,11 @@ TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
                             0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
     PanTiltTransform PTU(calibration_parameters);
 
-    double pan;
-    double tilt;
+    double pan=0;
+    double tilt=0;
+    
     PTC->get_pan_tilt_angle_current(pan,tilt);
+    
 
     ROS_INFO_STREAM("pan: " << pan << " tilt: " << tilt);
 
@@ -108,6 +112,34 @@ TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
     TooN::SE3<> se3cam2Calibration = util::Matrix4dToSE3(cam2CalInv);
 
     return se3cam2Calibration;
+}
+
+TooN::SE3<> Tracker::GetInterpolatedCalibrationMatrix(ros::Time int_time)
+{
+    //Eigen::Matrix< double, 18, 1 > calibration_parameters;
+    //calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
+                            //0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
+
+    Eigen::Matrix< double, 12, 1 > calibration_parameters;
+    calibration_parameters << 1.5580 ,   0.0169  ,  0.0141 ,   0.3363 ,   0.0842 ,  -0.0395 ,   0.0003 ,   0.0742,    0.0064,   -0.0117 ,   1.5803 ,   0.0451;
+    PanTiltTransform PTU(calibration_parameters);
+
+    double pan=0;
+    double tilt=0;
+    
+    PTC->get_pan_tilt_angle_interpolated(pan,tilt,int_time);
+    
+
+    ROS_INFO_STREAM("interpolated pan: " << pan << " interpolated tilt: " << tilt);
+
+    PTU.set_pan_angle(1.57079632679+pan);
+    PTU.set_tilt_angle(1.57079632679+tilt);
+    Eigen::Matrix4d cam2Cal = PTU.ComputeRigTransformation();
+    Eigen::Matrix4d cam2CalInv = cam2Cal.inverse();
+    TooN::SE3<> se3cam2Calibration = util::Matrix4dToSE3(cam2CalInv);
+
+    return se3cam2Calibration;
+
 }
 
 // The constructor mostly sets up interal reference variables
@@ -222,8 +254,13 @@ void Tracker::RequestInit(bool bPutPlaneAtOrigin)
 // Will add next MKF if not lost
 void Tracker::AddNext()
 { 
-  if(mMap.mbGood && !IsLost())
-    mbAddNext = true; 
+  //if(mMap.mbGood && !IsLost())
+    //mbAddNext = true; 
+
+  if(!stopMKFAdd)
+    stopMKFAdd = true;
+  else
+    stopMKFAdd = false;
 }
 
 // Generate a new MultiKeyFrame with a given pose and its children KeyFrames with the fixed camera poses
@@ -470,8 +507,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
     if(!IsLost())  // .. but only if we're not lost!
     {
 
+      //ros::Time ptu_stamp = PTC->get_latest_timestamp();
+      //std::cout<<"image time: " << timestamp << "ptu time: " << ptu_stamp <<std::endl;
 
-      TooN::SE3<> se3cam2Calibration = GetCurrentCalibrationMatrix();
+      TooN::SE3<> se3cam2Calibration = GetInterpolatedCalibrationMatrix(timestamp);
 
 
       for(unsigned i=0; i < mvAllCamNames.size(); ++i)
@@ -533,13 +572,17 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
       
       static gvar3<int> gvnAddingMKFs("AddingMKFs", 1, HIDDEN|SILENT);
       // Heuristics to check if a key-frame should be added to the map:
-      if(mbAddNext || //mMapMaker.Initializing() ||
+
+      if(stopMKFAdd)
+        mMessageForUser << " MKF Additions are paused, press 'a' to resume";
+
+      if( !stopMKFAdd && (mbAddNext || //mMapMaker.Initializing() ||
          (*gvnAddingMKFs &&
           mOverallTrackingQuality == GOOD &&
           mnLostFrames == 0 &&
           ros::Time::now() - mtLastMultiKeyFrameDropped > ros::Duration(0.1) &&
           //mMapMaker.NeedNewMultiKeyFrame(*mpCurrentMKF, CountMeasurements()))
-          mMapMaker.NeedNewMultiKeyFrame(*mpCurrentMKF)))
+          mMapMaker.NeedNewMultiKeyFrame(*mpCurrentMKF))))
       {
         if(mbAddNext)
           ROS_DEBUG("Adding MKF because add next was clicked");

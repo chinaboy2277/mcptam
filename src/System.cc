@@ -56,6 +56,13 @@ using namespace GVars3;
 using namespace TooN;
 
 double pan_tilt_angle_increment = 0.174533; //in rads, about 10 degrees
+bool do_ptu_scan = false;
+int ptu_move_state = 1;
+double pan_lim = M_PI/4;
+double tilt_lim = M_PI/6;
+double ptu_wait_time = 8.0;
+ros::Time PTUStartTime;
+
 
 System::System(ros::NodeHandle &nodehandle)
 : SystemFrontendBase("mcptam", true)
@@ -201,6 +208,7 @@ void System::Run()
   ros::Time grabStartTime;
   ros::Time grabEndTime;
   ros::Time trackStartTime;
+  
   bool bLastGrabSuccess = true;
   
   mnGrabAttempts = 0;
@@ -308,6 +316,66 @@ void System::Run()
     }
     ros::spinOnce(); //spin to make sure we process callbacks
     mCallbackQueueROS.callAvailable();
+
+    //process ptu 
+
+    if(do_ptu_scan)
+    {
+      if(ptu_move_state==1) 
+      {
+        mpTracker->PTC->set_pan_tilt_setpoint(pan_lim,0);
+
+        ros::Duration dt = ros::Time::now() - PTUStartTime;
+        std::cout<<dt.toSec()<<std::endl;
+
+        //timer to see if we should move to next state
+        if( ( ros::Time::now() - PTUStartTime) > ros::Duration(ptu_wait_time))
+        {
+          
+            PTUStartTime = ros::Time::now(); //reset the timer
+            ptu_move_state =2;
+        }
+      }
+      if(ptu_move_state==2) 
+      {
+        mpTracker->PTC->set_pan_tilt_setpoint(0,tilt_lim);
+
+        //timer to see if we should move to next state
+        if( (ros::Time::now()-PTUStartTime) > ros::Duration(ptu_wait_time))
+        {
+            PTUStartTime = ros::Time::now(); //reset the timer
+            ptu_move_state =3;
+        }
+      }
+      if(ptu_move_state==3) 
+      {
+        mpTracker->PTC->set_pan_tilt_setpoint(-pan_lim,0);
+
+        //timer to see if we should move to next state
+        if( (ros::Time::now()-PTUStartTime) > ros::Duration(ptu_wait_time))
+        {
+            PTUStartTime = ros::Time::now(); //reset the timer
+            ptu_move_state =4;
+        }
+      }
+      if(ptu_move_state==4) 
+      {
+        mpTracker->PTC->set_pan_tilt_setpoint(0,0);
+
+        //timer to see if we should move to next state
+        if( (ros::Time::now()-PTUStartTime) > ros::Duration(ptu_wait_time))
+        {
+            PTUStartTime = ros::Time::now(); //reset the timer
+            ptu_move_state =1;
+        }
+      }
+
+    }
+    else //reset the pan tilt
+    {
+      mpTracker->PTC->set_pan_tilt_setpoint(0,0);
+    }
+    
   }
 }
 
@@ -400,6 +468,17 @@ void System::GUICommandHandler(std::string command, std::string params)
       mpTracker->AddNext();
     }
 
+    else if(params=="g")
+    {
+      do_ptu_scan = true;
+      PTUStartTime = ros::Time::now();
+    }
+    else if(params == "h")
+    {
+      do_ptu_scan = false;
+    }
+
+
     //keypresses for moving ptu unit 
     else if(params == "i" ) //tilt up
     {
@@ -437,6 +516,7 @@ void System::GUICommandHandler(std::string command, std::string params)
         mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
       
     }
+
     
     return;
   }
