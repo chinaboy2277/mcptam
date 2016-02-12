@@ -12,6 +12,7 @@
 
 #include <ros/ros.h>
 #include <Eigen/Core>
+#include <string>
 
 #ifndef __PAN_TILT_TRANSFORM_H
 #define __PAN_TILT_TRANSFORM_H
@@ -25,6 +26,7 @@
 
  	//constructor
  	PanTiltTransform(Eigen::Matrix< double, 18, 1 > calibration_parameters); 
+ 	PanTiltTransform(Eigen::Matrix< double, 12, 1 > calibration_parameters); 
  	
  	//constructs a transformation matrix given the DH parameters (theta, d, r, alpha)
  	Eigen::Matrix4d GenerateDHMatrix(double theta, double d,double r,double alpha); 
@@ -49,9 +51,11 @@
 
  private:
 
+ 	std::string cal_parameterization;
  	double _current_pan_angle; //current pan_angle (dont forget to add 90 offset)
  	double _current_tilt_angle; //current tilt_angle (dont forget to add 90 offset)
- 	Eigen::Matrix< double, 18, 1 > _calibration_parameters; //calibration params
+ 	Eigen::Matrix< double, 18, 1 > _calibration_parameters18; //calibration params
+ 	Eigen::Matrix< double, 12, 1 > _calibration_parameters12; //calibration params 
  
  };
 

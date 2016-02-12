@@ -116,12 +116,9 @@ TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
 
 TooN::SE3<> Tracker::GetInterpolatedCalibrationMatrix(ros::Time int_time)
 {
-    //Eigen::Matrix< double, 18, 1 > calibration_parameters;
-    //calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
-                            //0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
-
-    Eigen::Matrix< double, 12, 1 > calibration_parameters;
-    calibration_parameters << 1.5580 ,   0.0169  ,  0.0141 ,   0.3363 ,   0.0842 ,  -0.0395 ,   0.0003 ,   0.0742,    0.0064,   -0.0117 ,   1.5803 ,   0.0451;
+    Eigen::Matrix< double, 18, 1 > calibration_parameters;
+    calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
+                            0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
     PanTiltTransform PTU(calibration_parameters);
 
     double pan=0;
