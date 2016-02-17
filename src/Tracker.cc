@@ -116,10 +116,12 @@ TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
 
 TooN::SE3<> Tracker::GetInterpolatedCalibrationMatrix(ros::Time int_time)
 {
-    Eigen::Matrix< double, 18, 1 > calibration_parameters;
-    calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
-                            0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
-    PanTiltTransform PTU(calibration_parameters);
+    //Eigen::Matrix< double, 18, 1 > calibration_parameters;
+    //calibration_parameters << 1.5541, 0.0181,0.0158,0.3401,0.0422,-0.0380,-0.0426,-0.0003,1.5738,-0.0004,
+                            //0.0874, 1.5744, 0.0040, -0.0093, 1.5794, -0.0126,-0.0004,0.0452;
+
+    
+
 
     double pan=0;
     double tilt=0;
@@ -129,9 +131,40 @@ TooN::SE3<> Tracker::GetInterpolatedCalibrationMatrix(ros::Time int_time)
 
     ROS_INFO_STREAM("interpolated pan: " << pan << " interpolated tilt: " << tilt);
 
-    PTU.set_pan_angle(1.57079632679+pan);
-    PTU.set_tilt_angle(1.57079632679+tilt);
-    Eigen::Matrix4d cam2Cal = PTU.ComputeRigTransformation();
+
+    Eigen::Matrix< double, 12, 1 > calibration_parameters_moving;
+    calibration_parameters_moving << 1.5580,    0.0169,    0.0141,    0.3363,    0.0842,   -0.0395,    0.0003,    0.0742,    0.0064,   -0.0117 ,   1.5803,    0.0451;
+
+    Eigen::Matrix< double, 12, 1 > calibration_parameters_static;
+    calibration_parameters_static << 1.5536,    0.0191,    0.0153,    0.3381,    0.0856,   -0.0398,   -0.0008,    0.0756,    0.0074,   -0.0079,    1.5807,    0.0443;
+
+    Eigen::Matrix< double, 6, 1 > calibration_parameters_stereo;
+    calibration_parameters_stereo << -0.0139313,  -0.0211703,   0.0290815,   0.3380386,   0.0194216,   0.0071473;
+
+    Eigen::Matrix4d cam2Cal;
+
+    if(calibration_type==0)
+    {
+      PanTiltTransform PTU(calibration_parameters_moving);
+      PTU.set_pan_angle(1.57079632679+pan);
+      PTU.set_tilt_angle(1.57079632679+tilt);
+      cam2Cal = PTU.ComputeRigTransformation();
+    }
+    else if(calibration_type==1)
+    {
+      PanTiltTransform PTU(calibration_parameters_static);
+      PTU.set_pan_angle(1.57079632679+pan);
+      PTU.set_tilt_angle(1.57079632679+tilt);
+      cam2Cal = PTU.ComputeRigTransformation();
+    }
+    else 
+    {
+      PanTiltTransform PTU(calibration_parameters_stereo);
+      PTU.set_pan_angle(1.57079632679+pan);
+      PTU.set_tilt_angle(1.57079632679+tilt);
+      cam2Cal = PTU.ComputeRigTransformation();
+    }
+
     Eigen::Matrix4d cam2CalInv = cam2Cal.inverse();
     TooN::SE3<> se3cam2Calibration = util::Matrix4dToSE3(cam2CalInv);
 
@@ -155,6 +188,9 @@ Tracker::Tracker(Map &map, MapMakerClientBase &mapmaker, TaylorCameraMap &camera
   mmCameraModels = cameras;
   mmCameraModelsSBI = mmCameraModels;  // the SBI version will be used with the frame-to-frame rotation detector which needs to resize the camera image internally
   mmDrawOffsets = offsets;
+
+  //arun debug
+  calibration_type = 0;
   
   // Save camera names and image sizes
   for(SE3Map::iterator se3_it = mmFixedPoses.begin(); se3_it != mmFixedPoses.end(); ++se3_it)
@@ -222,7 +258,7 @@ void Tracker::Reset(bool bSavePose, bool bResetMap)
   }
   
   SetMasks(mmMasks);
-  
+
   // Tell the MapMaker to reset itself.. 
   // this may take some time, since the mapmaker thread may have to wait
   // for an abort-check during calculation, so sleep while waiting.
@@ -530,7 +566,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 	  UpdateCamsFromWorld();
 
       startTime = ros::WallTime::now();
-      //ApplyMotionModel(); 
+      ApplyMotionModel(); 
       timingMsg.motion = (ros::WallTime::now() - startTime).toSec();     // 
       TrackMap();               //  These three lines do the main tracking work.
       UpdateMotionModel();      //
@@ -562,7 +598,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
       }
       
       mMessageForUser << "Map: " << mMap.mlpPoints.size() << "P, " << mMap.mlpMultiKeyFrames.size() << "MKF, " << mMap.mlpPointsTrash.size()<<"P in Trash, "<<mMap.mlpMultiKeyFramesTrash.size()<<" MKF in Trash" ;
-    
+      mMessageForUser <<std::endl;
       startTime = ros::WallTime::now();
       ROS_DEBUG_STREAM("Since last dropped: "<<ros::Time::now() - mtLastMultiKeyFrameDropped);
       ROS_DEBUG_STREAM("About to test neednew, mkf depth: "<<mpCurrentMKF->mdTotalDepthMean);
@@ -570,8 +606,16 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
       static gvar3<int> gvnAddingMKFs("AddingMKFs", 1, HIDDEN|SILENT);
       // Heuristics to check if a key-frame should be added to the map:
 
+
+      if(calibration_type==0)
+        mMessageForUser << " cal_type: moving " <<std::endl;
+      if(calibration_type==1)
+        mMessageForUser << " cal_type: static " <<std::endl;
+      if(calibration_type==2)
+        mMessageForUser << " cal_type: stereo " <<std::endl;
+
       if(stopMKFAdd)
-        mMessageForUser << " MKF Additions are paused, press 'a' to resume";
+        mMessageForUser << " MKF Additions are paused, press 'a' to resume"<<std::endl;
 
       if( !stopMKFAdd && (mbAddNext || //mMapMaker.Initializing() ||
          (*gvnAddingMKFs &&

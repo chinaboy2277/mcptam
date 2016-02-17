@@ -219,6 +219,9 @@ public:
   static double sdTrackingQualityBad; ///< If fraction of potentially visible points actually founds is below this, tracking quality is bad
   static int snLostFrameThresh;       ///< Cap the number of frames where tracker is lost
   static bool sbCollectAllPoints;  ///< Should we project the whole map or do something smarter? (affects CollectNearestPoints)
+
+  //arun debug
+  int calibration_type; //0 is from moving cal, 1 is from static cal, 2 is stereo cal
   
 protected:
   

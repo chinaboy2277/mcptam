@@ -29,6 +29,20 @@ PanTiltTransform::PanTiltTransform(Eigen::Matrix< double, 12, 1 > calibration_pa
 	 ROS_INFO_STREAM("PanTiltTransform: Using 12 variable parameterization: " << calibration_parameters.transpose() );
 }
 
+//overloaded constructor for 12 param 
+PanTiltTransform::PanTiltTransform(Eigen::Matrix< double, 6, 1 > calibration_parameters)
+{
+  
+  //set the calibration params
+   _calibration_parameters6 = calibration_parameters;
+   //init the pan and tilt angles
+   _current_pan_angle = 0;
+   _current_tilt_angle=0;
+   cal_parameterization = "cal_6";
+   ROS_INFO_STREAM("PanTiltTransform: Using 6 variable parameterization: " << calibration_parameters.transpose() );
+}
+
+
 
 Eigen::Matrix4d PanTiltTransform::GenerateDHMatrix(double theta, double d,double r,double alpha)
 {
@@ -89,7 +103,7 @@ Eigen::Matrix4d PanTiltTransform::ComputeRigTransformation()
 	}
 	else if(cal_parameterization == "cal_12")
 	{
-		ROS_INFO("here");
+		//ROS_INFO("here");
 		double theta1 = _current_pan_angle; 
 	    double theta2 = _current_tilt_angle; 
 	    
@@ -104,6 +118,15 @@ Eigen::Matrix4d PanTiltTransform::ComputeRigTransformation()
 	    Eigen::Matrix4d Tpt_to_cam2 = GenerateTransformationMatrix(pt_to_cam2);
 	    T_total = Tcam1_to_base*Tbase_to_pt1* Tbase_to_pt2*Tpt_to_cam2;
 	}
+
+  else if(cal_parameterization == "cal_6")
+  {
+    //ROS_INFO("here");
+         
+      Vector6d cam1_to_cam2;
+      cam1_to_cam2 << _calibration_parameters6(0,0), _calibration_parameters6(1,0), _calibration_parameters6(2,0), _calibration_parameters6(3,0) ,_calibration_parameters6(4,0) , _calibration_parameters6(5,0);
+      T_total = GenerateTransformationMatrix(cam1_to_cam2);;
+  }
 
     return T_total;
 }

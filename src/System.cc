@@ -482,39 +482,41 @@ void System::GUICommandHandler(std::string command, std::string params)
     //keypresses for moving ptu unit 
     else if(params == "i" ) //tilt up
     {
-        double current_pan_angle_setpoint;
+        /*double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
         mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double tilt_angle_setpoint = current_tilt_angle_setpoint + pan_tilt_angle_increment;
-        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);*/
 
     }
     else if(params == "k" ) //tilt down
     {
-        double current_pan_angle_setpoint;;
+        /*double current_pan_angle_setpoint;;
         double current_tilt_angle_setpoint;
         mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double tilt_angle_setpoint = current_tilt_angle_setpoint - pan_tilt_angle_increment;
-        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);
+        mpTracker->PTC->set_pan_tilt_setpoint(current_pan_angle_setpoint, tilt_angle_setpoint);*/
+        mpTracker->calibration_type = 1;
+
     }
     else if(params == "j" ) //pan left
     {
-        double current_pan_angle_setpoint;
+        /*double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
         mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double pan_angle_setpoint = current_pan_angle_setpoint + pan_tilt_angle_increment;
-        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
-
+        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);*/
+        mpTracker->calibration_type = 0;
       
     }
     else if(params == "l" ) //pan right
     {
-        double current_pan_angle_setpoint;
+        /*double current_pan_angle_setpoint;
         double current_tilt_angle_setpoint;
         mpTracker->PTC->get_pan_tilt_angle_setpoint(current_pan_angle_setpoint,current_tilt_angle_setpoint);
         double pan_angle_setpoint = current_pan_angle_setpoint - pan_tilt_angle_increment;
-        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
-      
+        mpTracker->PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);*/
+        mpTracker->calibration_type = 2;
     }
 
     
