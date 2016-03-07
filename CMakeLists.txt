@@ -6,7 +6,7 @@ set(CMAKE_BUILD_TYPE None)
 
 # Set our own specific flags. Want something like RelWithDebInfo but without the 
 # -DNDEBUG flag that disables asserts
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x -march=core2 -msse3 -O3 -g -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x -march=core-avx-i -msse3 -O2 -pipe -g -fopenmp")
 
 # Find various packages in order to set up environment variables
 find_package(catkin REQUIRED COMPONENTS roscpp image_transport sensor_msgs cv_bridge geometry_msgs tf message_filters std_msgs

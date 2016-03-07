@@ -78,11 +78,11 @@ int Tracker::snMaxPatchesPerFrame = 1000;
 int Tracker::snMinPatchesPerFrame = 10;
 int Tracker::snCoarseMin = 15;              
 int Tracker::snCoarseMax = 60;              
-int Tracker::snCoarseRange = 30;            
+int Tracker::snCoarseRange = 50;            
 int Tracker::snCoarseSubPixIts = 8;        
 bool Tracker::sbDisableCoarse = false;        
 double Tracker::sdCoarseMinVelocity = 0.006;   
-std::string Tracker::sMEstimatorName = "Tukey";
+std::string Tracker::sMEstimatorName = "Cauchy";
 double Tracker::sdTrackingQualityGood = 0.3;
 double Tracker::sdTrackingQualityBad = 0.13;
 int Tracker::snLostFrameThresh = 3;
@@ -287,13 +287,19 @@ void Tracker::RequestInit(bool bPutPlaneAtOrigin)
 // Will add next MKF if not lost
 void Tracker::AddNext()
 { 
-  //if(mMap.mbGood && !IsLost())
-    //mbAddNext = true; 
+  if(mMap.mbGood && !IsLost())
+    mbAddNext = true; 
 
-  if(!stopMKFAdd)
+  
+}
+
+void Tracker::PauseKeyframeAddition()
+{
+	if(!stopMKFAdd)
     stopMKFAdd = true;
   else
     stopMKFAdd = false;
+
 }
 
 // Generate a new MultiKeyFrame with a given pose and its children KeyFrames with the fixed camera poses
@@ -566,7 +572,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 	  UpdateCamsFromWorld();
 
       startTime = ros::WallTime::now();
-      ApplyMotionModel(); 
+      //ApplyMotionModel(); 
       timingMsg.motion = (ros::WallTime::now() - startTime).toSec();     // 
       TrackMap();               //  These three lines do the main tracking work.
       UpdateMotionModel();      //

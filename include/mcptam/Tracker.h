@@ -196,6 +196,7 @@ public:
   /// Set the addnext flag to true if map is good and we are not lost, will add subsequent MKF to map
   /// regardless of other metrics
   void AddNext();
+  void PauseKeyframeAddition();
 
   TooN::SE3<> GetCurrentCalibrationMatrix();
   TooN::SE3<> GetInterpolatedCalibrationMatrix(ros::Time int_time);

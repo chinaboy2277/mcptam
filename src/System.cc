@@ -467,6 +467,10 @@ void System::GUICommandHandler(std::string command, std::string params)
     {
       mpTracker->AddNext();
     }
+    else if(params == "p")
+    {
+      mpTracker->PauseKeyframeAddition();
+    }
 
     else if(params=="g")
     {
