@@ -44,7 +44,7 @@
 #ifndef __POINT_COLLECTOR_H
 #define __POINT_COLLECTOR_H
 
-#include <mcptam/PanTiltControl.h>
+#include <mcptam/GimbalControl.h>
 #include <mcptam/SystemBase.h>
 #include <mcptam/Types.h>
 #include <mcptam/Reset.h>
@@ -140,7 +140,8 @@ private:
 
   ros::NodeHandle nh;                     /// pointer to nodehandle so we can set up subscribers/publishers if required
 
-  PanTiltControl *PTC;                     /// Pan Tilt Control object
+  //PanTiltControl *PTC;                     /// Pan Tilt Control object
+  GimbalControl *GC;
   int capture_index;                  /// index that keeps track of number of times we've succeessfully outputted data
 };
 

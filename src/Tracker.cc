@@ -100,7 +100,7 @@ TooN::SE3<> Tracker::GetCurrentCalibrationMatrix()
     double pan=0;
     double tilt=0;
     
-    PTC->get_pan_tilt_angle_current(pan,tilt);
+   // PTC->get_pan_tilt_angle_current(pan,tilt);
     
 
     ROS_INFO_STREAM("pan: " << pan << " tilt: " << tilt);
@@ -126,7 +126,7 @@ TooN::SE3<> Tracker::GetInterpolatedCalibrationMatrix(ros::Time int_time)
     double pan=0;
     double tilt=0;
     
-    PTC->get_pan_tilt_angle_interpolated(pan,tilt,int_time);
+    //PTC->get_pan_tilt_angle_interpolated(pan,tilt,int_time);
     
 
     ROS_INFO_STREAM("interpolated pan: " << pan << " interpolated tilt: " << tilt);

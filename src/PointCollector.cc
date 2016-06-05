@@ -44,6 +44,7 @@
 #include <mcptam/OpenGL.h>
 #include <mcptam/Map.h>
 #include <mcptam/PanTiltControl.h>
+ #include <mcptam/GimbalControl.h>
 #include <gvars3/instances.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
@@ -76,7 +77,8 @@ PointCollector::PointCollector(ros::NodeHandle &nodehandle)
 
   capture_index = 0; //reset capture index
 
-  PTC = new PanTiltControl(nh,"/ptu/state", "/ptu/cmd");
+  //PTC = new PanTiltControl(nh,"/ptu/state", "/ptu/cmd");
+  GC = new GimbalControl(nh,"/gimbal/encoders");
   
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
@@ -223,11 +225,15 @@ std::string PointCollector::Track()
       mpGLWindow->PrintString(irOffset + CVD::ImageRef(10,40), ss.str(), 10);
 
       //print out the pan and tilt angles to screen
-      double pan_angle; 
-      double tilt_angle;
-      PTC->get_pan_tilt_angle_current(pan_angle, tilt_angle);
+      //double pan_angle; 
+      //double tilt_angle;
+      double pitch_angle;
+      double roll_angle;
+      double yaw_angle;
+      GC->get_gimbal_angles_current(roll_angle,pitch_angle,yaw_angle);
       std::stringstream ps;
-      ps<<"pan: "<<pan_angle*57.3<< std::endl <<"tilt: " << tilt_angle*57.3 <<std::endl;
+      //ps<<"pan: "<<pan_angle*57.3<< std::endl <<"tilt: " << tilt_angle*57.3 <<std::endl;
+      ps<<"pitch: "<<pitch_angle*57.3<< std::endl <<"roll: " << roll_angle*57.3 <<std::endl <<"yaw: " << yaw_angle*57.3 <<std::endl;
       mpGLWindow->PrintString(CVD::ImageRef(10,550), ps.str(), 10);
 
     }
@@ -241,13 +247,14 @@ std::string PointCollector::Track()
       for(unsigned int i=0; i<vTrackers.size(); i++)
       {
         TrackerCalib* pCurrentTrackerFrame = vTrackers[i];
-        double pan_angle;
-        double tilt_angle;
+        double pitch_angle;
+        double roll_angle;
+        double yaw_angle;
         double sigma_squared_error;
-        PTC->get_pan_tilt_angle_current(pan_angle,tilt_angle);
+        GC->get_gimbal_angles_current(roll_angle,pitch_angle,yaw_angle);
         // Call map maker's ComputeGridPoints
        // ROS_INFO_STREAM("Computing Points for camera: " << pCurrentTrackerFrame->mCamName);
-        bool bSuccess = mpMapMaker->ComputeGridPoints(*(pCurrentTrackerFrame->mpCalibImage), mdSquareSize, pCurrentTrackerFrame->mCamName, pCurrentTrackerFrame->mpCurrentMKF->mse3BaseFromWorld,pan_angle,tilt_angle, capture_index);
+        bool bSuccess = mpMapMaker->ComputeGridPoints(*(pCurrentTrackerFrame->mpCalibImage), mdSquareSize, pCurrentTrackerFrame->mCamName, pCurrentTrackerFrame->mpCurrentMKF->mse3BaseFromWorld,roll_angle,pitch_angle,yaw_angle, capture_index);
        	ros::Duration(0.5).sleep(); // sleep for half a second
        //reset after all info has been dumped
         if(!bSuccess) //failure in getting tracker pose
@@ -374,7 +381,7 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
     }
 
     //keypresses for moving ptu unit 
-    else if(params == "i" ) //tilt up
+    /*else if(params == "i" ) //tilt up
     {
         ROS_INFO_STREAM("p uppppppppppppppppppppppppp");
         double current_pan_angle_setpoint;
@@ -410,7 +417,7 @@ void PointCollector::GUICommandHandler(std::string command, std::string params)
         double pan_angle_setpoint = current_pan_angle_setpoint - pan_tilt_angle_increment;
         PTC->set_pan_tilt_setpoint(pan_angle_setpoint, current_tilt_angle_setpoint);
       
-    }
+    }*/
 
 
 

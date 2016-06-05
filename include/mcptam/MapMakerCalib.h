@@ -88,7 +88,7 @@ public:
    *  @param pan_angle The pan angle of the gimbal, for file output
    *  @param tilt_angle The tilt angle of the gimbal, for file output
    *  @return Did it succeed?  */
-  bool ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose, double pan_angle, double tilt_angle, int capture_index);
+  bool ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, TooN::SE3<> &se3TrackerPose, double pitch_angle, double roll_angle, double yaw_angle, int capture_index);
   
   /** @brief Cleans up the map and gets it ready for calibration.
    * 

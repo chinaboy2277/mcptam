@@ -228,7 +228,7 @@ bool MapMakerCalib::InitFromCalibImage(CalibImageTaylor &calibImage, double dSqu
 }
 
 
-bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose, double pan_angle, double tilt_angle, int capture_index)
+bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSquareSize, std::string cameraName, SE3<> &se3TrackerPose, double roll_angle, double pitch_angle, double yaw_angle, int capture_index)
 {
 
   //open up a file stream to dump the grid points
@@ -356,8 +356,8 @@ bool MapMakerCalib::ComputeGridPoints(CalibImageTaylor &calibImage, double dSqua
   ofs<<"tmatrix:" <<std::endl;
   ofs<<se3TrackerPose;
   ofs<< "0 0 0 1 " << std::endl;
-  ofs<<"ptangles:" <<std::endl;
-  ofs<< pan_angle << " " << tilt_angle << std::endl;
+  ofs<<"gimbalangles:" <<std::endl;
+  ofs<< pitch_angle << " " << roll_angle << " " << yaw_angle << std::endl;
   ofs<< "end:";
   
   ROS_INFO_STREAM("Point Collector: Made grid with " << mMap.mlpPoints.size() << " points.");
