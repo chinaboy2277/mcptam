@@ -61,7 +61,7 @@ roslint_add_test()
 add_executable(mcptam src/Main.cpp src/GLWindow2.cpp src/GLWindowMenu.cpp src/VideoSourceMulti.cpp src/CameraGroupSubscriber.cpp 
                       src/SystemBase.cpp src/SystemFrontendBase.cpp src/System.cpp src/TaylorCamera.cpp src/KeyFrame.cpp src/MapPoint.cpp src/Map.cpp 
                       src/SmallBlurryImage.cpp src/ShiTomasi.cpp src/MapMaker.cpp src/MapMakerBase.cpp src/MapMakerClientBase.cpp src/MapMakerServerBase.cpp 
-                      src/PatchFinder.cpp src/Relocaliser.cpp src/Tracker.cpp src/EntropyComputation.cpp src/KeyFrameViewer.cpp 
+                      src/PatchFinder.cpp src/Relocaliser.cpp src/Tracker.cpp src/EntropyComputationArun.cpp src/EntropyComputation.cpp src/KeyFrameViewer.cpp 
                       src/BundleAdjusterBase.cpp src/MiniPatch.cpp src/BundleAdjusterMulti.cpp src/ChainBundle.cpp)
 add_dependencies(mcptam ${PROJECT_NAME}_gencpp)
 target_link_libraries(mcptam ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${SUITESPARSE_LIBRARIES} ${CVD_LIBRARY} ${OPENGL_gl_LIBRARY} ${OpenCV_LIBS} ${GVars3_LIBRARIES}
@@ -71,7 +71,7 @@ add_executable(mcptam_client src/MainClient.cpp src/GLWindow2.cpp src/GLWindowMe
                              src/SystemBase.cpp src/SystemFrontendBase.cpp src/SystemClient.cpp src/TaylorCamera.cpp src/KeyFrame.cpp src/MapPoint.cpp src/Map.cpp 
                              src/SmallBlurryImage.cpp src/ShiTomasi.cpp src/MapMakerClient.cpp src/MapMakerBase.cpp src/MapMakerClientBase.cpp 
                              src/NetworkManager.cpp src/PatchFinder.cpp src/Relocaliser.cpp src/MiniPatch.cpp 
-                             src/Tracker.cpp  src/EntropyComputation.cpp  src/KeyFrameViewer.cpp)
+                             src/Tracker.cpp  src/EntropyComputation.cpp  src/EntropyComputationArun.cpp src/KeyFrameViewer.cpp)
 add_dependencies(mcptam_client ${PROJECT_NAME}_gencpp)
 target_link_libraries(mcptam_client ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${SUITESPARSE_LIBRARIES} ${CVD_LIBRARY} ${OPENGL_gl_LIBRARY} ${OpenCV_LIBS} ${GVars3_LIBRARIES}
                                     ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
@@ -95,7 +95,7 @@ add_executable(pose_calibrator src/MainPoseCalibrator.cpp src/GLWindow2.cpp src/
                               src/SystemBase.cpp src/PoseCalibrator.cpp src/CalibImageTaylor.cpp src/CalibCornerPatch.cpp src/CalibGridCorner.cpp 
                               src/TrackerCalib.cpp src/MapMakerCalib.cpp src/MapMaker.cpp src/MapMakerBase.cpp src/MapMakerClientBase.cpp src/MapMakerServerBase.cpp
                               src/TaylorCamera.cpp src/KeyFrame.cpp src/MapPoint.cpp src/Map.cpp src/SmallBlurryImage.cpp src/ShiTomasi.cpp  
-                              src/PatchFinder.cpp src/Relocaliser.cpp src/Tracker.cpp src/EntropyComputation.cpp src/KeyFrameViewer.cpp
+                              src/PatchFinder.cpp src/Relocaliser.cpp src/Tracker.cpp src/EntropyComputation.cpp src/EntropyComputationArun.cpp  src/KeyFrameViewer.cpp
                               src/BundleAdjusterBase.cpp src/BundleAdjusterSingle.cpp src/BundleAdjusterCalib.cpp src/ChainBundle.cpp src/MiniPatch.cpp)
 add_dependencies(pose_calibrator ${PROJECT_NAME}_gencpp)
 target_link_libraries(pose_calibrator ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${SUITESPARSE_LIBRARIES} ${CVD_LIBRARY} ${OPENGL_gl_LIBRARY} ${OpenCV_LIBS} ${GVars3_LIBRARIES}

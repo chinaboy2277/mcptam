@@ -71,6 +71,7 @@
 #ifndef MCPTAM_TRACKER_H
 #define MCPTAM_TRACKER_H
 
+#include <mcptam/Cper.h> //SABA
 #include <mcptam/Types.h>
 #include <mcptam/MapPoint.h>
 #include <mcptam/Relocaliser.h>
@@ -87,13 +88,17 @@
 #include <iostream>
 #include <fstream>
 #include <set>
-
+#include <cmath>
 
 class TrackerData;
 class Map;
 class MapMakerClientBase;
 struct TrackerMeasurementData;
 typedef std::pair<double,int> score_pair; // pair to keep track of keyframe score (double is score, int is index)
+
+typedef std::pair<double, MultiKeyFrame*> MKFScorePair; // SABA
+template class StreamBuffer<MKFScorePair>; //SABA
+typedef StreamBuffer<MKFScorePair> MKFScorePairStreamBuffer; //SABA
 
 /// Using a boost intrusive_ptr allows claiming a MapPoint as "used", so it
 /// won't
@@ -637,8 +642,15 @@ protected:
   double bestBufferKeyframeScore; ///< best entropy reduction score so far in the buffer
   std::vector<score_pair> vKeyframeScores; //vector of pairs which keeps track of 
 
+  StreamBuffer<MKFScorePair> mMultiKeyFrameBuffer; //SABA
+  bool mbUseCper; //SABA
+  int muiMKFBufferCapacity; //SABA
+  
   // testing
   bool mbAddNext;  ///< Add the next MKF now
+
+   void AddNewKeyFrameFromBuffer(); //SABA
+   void RecordMeasurementsAndBufferMKF(); //SABA
 };
 
 #endif  // MCPTAM_TRACKER_H
