@@ -85,7 +85,7 @@
 #include <ros/ros.h>
 #include <map>
 #include <string>
-#include <iostream>
+//#include <iostream>
 #include <fstream>
 #include <set>
 #include <cmath>
@@ -457,7 +457,7 @@ protected:
   
   
   /// Records the measurements and Buffers Keyframes while tracking.  We can later select a keyframe from the buffer to add to the map
-  void RecordMeasurementsAndBufferKeyFrame();  
+  //void RecordMeasurementsAndBufferKeyFrame();  
   
   /// Clear the keyframe buffer
   void ClearKeyFrameBuffer();  
