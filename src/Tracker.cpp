@@ -159,6 +159,7 @@ void Tracker::Reset(bool bSavePose, bool bResetMap)
   mbPutPlaneAtOrigin = true;
   mbAddNext = false;
   mmSimpleMeas.clear();
+  mMultiKeyFrameBuffer.Clear();
 
   mLastProcessTime = ros::Time::now();
   mse3StartPose = TooN::SE3<>();
@@ -2109,7 +2110,7 @@ void Tracker::RecordMeasurementsAndBufferMKF()
     pair.first = totalEntropyReductionMod; pair.second = mpTempMKF;
     mMultiKeyFrameBuffer.Enqueue(pair);
 
-#ifdef DEBUG_CPER
+#if DEBUG_CPER
     ROS_WARN_STREAM("Orig: mkf:" << mvKeyFrameBuffer.back() << " score: " << vKeyframeScores.back().first << " ---  Modified: mkf: " << mMultiKeyFrameBuffer.Back().second << " score: " << mMultiKeyFrameBuffer.Back().first);
 #endif
 
