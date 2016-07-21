@@ -179,10 +179,14 @@ void PointCollector::Run()
 // Perform all tracking operations
 std::string PointCollector::Track()
 {
+
+  double pixel_err_thresh = 0.2;	
   // This data will be displayed on GUI
   static std::queue<ros::Time> qLoopTimes;
   static std::deque<ros::Duration> qTotalDurations;
   static unsigned int nMaxQueueSize = 10;
+  std::vector<CVD::ImageRef> vOffset;
+  
       
   std::stringstream captionStream;  // gather messages here
   
@@ -192,7 +196,7 @@ std::string PointCollector::Track()
 
   static gvar3<std::string> gvsCurrentSubMenu("Menu.CurrentSubMenu", "", HIDDEN|SILENT); 
   bool bDrawKeyFrames = *gvsCurrentSubMenu == "View";
-
+  
 
   
   if(bGotNewFrame)
@@ -212,16 +216,22 @@ std::string PointCollector::Track()
     for(ImageBWMap::iterator it = mmFramesBW.begin(); it != mmFramesBW.end(); it++, nCamNum++)
     {
         TrackerCalib* pTracker = mmTrackers[it->first];
+        pTracker->singleGridVisible = true;
         vTrackers.push_back(pTracker);
-        pTracker->TrackFrame(it->second, timestamp, !bDrawKeyFrames, true);
+        pTracker->TrackFrame(it->second, timestamp, true, true);
         if(!pTracker->foundGridPattern) //one frame did not find a grid, set flag to false
-          allCamsGotGrid = false;    
+        {
+          allCamsGotGrid = false; 
+          pTracker->singleGridVisible = false;   
+        }
+
 
        // Print sequential number as overlay
       glColor3f(0,1.0,0);
       CVD::ImageRef irOffset = pTracker->mmDrawOffsets[pTracker->mCamName];
+      vOffset.push_back(irOffset);
       std::stringstream ss;
-      ss<<"#"<<nCamNum;
+      ss<<"#"<<nCamNum<<std::endl;
       mpGLWindow->PrintString(irOffset + CVD::ImageRef(10,40), ss.str(), 10);
 
       //print out the pan and tilt angles to screen
@@ -236,90 +246,99 @@ std::string PointCollector::Track()
       ps<<"pitch: "<<pitch_angle*57.3<< std::endl <<"roll: " << roll_angle*57.3 <<std::endl <<"yaw: " << yaw_angle*57.3 <<std::endl;
       mpGLWindow->PrintString(CVD::ImageRef(10,550), ps.str(), 10);
 
-    }
-    if(allCamsGotGrid)
-      ROS_INFO("PointCollector: Grid visible in all cameras");
+	    
 
+    }
+
+    for(ImageBWMap::iterator it = mmFramesBW.begin(); it != mmFramesBW.end(); it++, nCamNum++)
+    {
+        TrackerCalib* pTracker = mmTrackers[it->first];
+        if(allCamsGotGrid)
+		{
+
+		pTracker->bothGridVisible = true;   
+		}
+		else
+		{
+		pTracker->bothGridVisible = false;   	
+		}
+
+		//draw the status borders
+		pTracker->DrawStatusBorder();
+
+    }
+
+    //  ROS_INFO("PointCollector: Grid visible in all cameras");
+
+    bool bothSuccess = true;
     if(bGrabPoints && allCamsGotGrid) //if we've triggered to grab points, both cameras found grids 
     {
-      ROS_INFO("Capturing point data from all cameras");
-
+      
       for(unsigned int i=0; i<vTrackers.size(); i++)
       {
         TrackerCalib* pCurrentTrackerFrame = vTrackers[i];
         double pitch_angle;
         double roll_angle;
         double yaw_angle;
-        double sigma_squared_error;
+        
         GC->get_gimbal_angles_current(roll_angle,pitch_angle,yaw_angle);
         // Call map maker's ComputeGridPoints
        // ROS_INFO_STREAM("Computing Points for camera: " << pCurrentTrackerFrame->mCamName);
-        bool bSuccess = mpMapMaker->ComputeGridPoints(*(pCurrentTrackerFrame->mpCalibImage), mdSquareSize, pCurrentTrackerFrame->mCamName, pCurrentTrackerFrame->mpCurrentMKF->mse3BaseFromWorld,roll_angle,pitch_angle,yaw_angle, capture_index);
+        bool bSuccess = mpMapMaker->ComputeGridPoints(*(pCurrentTrackerFrame->mpCalibImage), mdSquareSize, pCurrentTrackerFrame->mCamName, pCurrentTrackerFrame->mpCurrentMKF->mse3BaseFromWorld,roll_angle,pitch_angle,yaw_angle, capture_index,pixel_err_thresh);
        	ros::Duration(0.5).sleep(); // sleep for half a second
+       	vPxErr[i] = sqrt(mpMapMaker->mdMeanChiSquared);
+       	vSuccess[i] = bSuccess;
+       	
        //reset after all info has been dumped
         if(!bSuccess) //failure in getting tracker pose
+        {
           ROS_ERROR_STREAM("PointCollector: Failed to get tracker pose");
-
+          bothSuccess = false;
+        }
+       
+        bGrabPoints = false;
         mpMapMaker->RequestReset();
+
       }
-      bGrabPoints = false;
-      capture_index++;
-    }
-    
 
-
-        
-    // Go through all the images that we got
-    /*for(ImageBWMap::iterator it = mmFramesBW.begin(); it != mmFramesBW.end(); it++, nCamNum++)
-    {
-      TrackerCalib* pTracker = mmTrackers[it->first];
       
-      
-      pTracker->TrackFrame(it->second, timestamp, !bDrawKeyFrames, true);
-      bool foundGrid = pTracker->foundGridPattern;
-            
-      
-
-      //print out the pan and tilt angles to screen
-      double pan_angle; 
-      double tilt_angle;
-      PTC->get_pan_tilt_angle_current(pan_angle, tilt_angle);
-      std::stringstream ps;
-      ps<<"pan: "<<pan_angle*57.3<< std::endl <<"tilt :" << tilt_angle*57.3 <<std::endl;
-      mpGLWindow->PrintString(CVD::ImageRef(10,550), ps.str(), 10);
-
-      //if(pTracker->meCheckerboardStage == TrackerCalib::CHECKERBOARD_SECOND_STAGE)
-      //{
-      //  ROS_INFO("found board");
-     // }
-      
-      
-      if(foundGrid)
-        ROS_INFO_STREAM("camera " <<  pTracker->mCamName << " found a grid");
-
-      if(bGrabPoints && foundGrid && !processedCamera[nCamNum-1]) //if we've triggered to grab points, the camera has found a grid, and we haven't already processed this camera 
+      if(bothSuccess)
       {
-      //std::string  CamName = pTracker->mCamName; 
-      //TrackerCalib* pFirstTracker = mmTrackers.begin()->second;
-      ROS_INFO_STREAM("computing points and tracker pose for " << pTracker->mCamName);
-
-      double pan_angle;
-      double tilt_angle;
-
-      PTC->get_pan_tilt_angle_current(pan_angle,tilt_angle);
-        
-        // Call map maker's init from calib image
-      bool bSuccess = mpMapMaker->ComputeGridPoints(*(pTracker->mpCalibImage), mdSquareSize, pTracker->mCamName, pTracker->mpCurrentMKF->mse3BaseFromWorld,pan_angle,tilt_angle);
-      
-      //reset after all info has been dumped
-      mpMapMaker->RequestReset();
-      //flag that we've serviced this camera
-      processedCamera[nCamNum-1] = true;
-
+      	 // Flash screen white to indicate capture
+      	glClearColor(1,1,1,0.5);
+      	glClear(GL_COLOR_BUFFER_BIT);
+      	capture_index++;
       }
-    }*/
+      else
+      {
+      	glClearColor(1,0,0,0.5);
+      	glClear(GL_COLOR_BUFFER_BIT);
+      }
 
+      	
+    }
+
+    for(int i=0;i<2;i++)
+    {
+          double px_err = vPxErr[i] ;
+          std::stringstream es;
+	   	  es<<"last capture RMS pixel error: " << px_err;
+
+	   	  if(vSuccess[i])
+	   	  {
+	   	  	glColor3f(0.0,1.0,0); //display green
+	   	  	mpGLWindow->PrintString(vOffset[i]+ CVD::ImageRef(10,60), es.str(), 10);
+	   	  }
+	   	  else{
+	   	  	glColor3f(1.0,0.0,0); //display red
+	   	  	mpGLWindow->PrintString(vOffset[i]+ CVD::ImageRef(10,60), es.str(), 10);
+	   	  }
+
+	}
+    vOffset.clear();
     
+    
+
     
     qTotalDurations.push_back(ros::Time::now() - start);
     if(qTotalDurations.size() > nMaxQueueSize)

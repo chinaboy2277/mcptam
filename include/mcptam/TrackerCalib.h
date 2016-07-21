@@ -95,6 +95,12 @@ public:
   
   enum {CHECKERBOARD_INACTIVE, CHECKERBOARD_FIRST_STAGE, CHECKERBOARD_SECOND_STAGE, CHECKERBOARD_RUNNING} meCheckerboardStage;  ///< Active during checkerboard finding
   
+  bool bothGridVisible;
+  bool singleGridVisible;
+  double rms_px_err;
+
+  /// Draw a border around the camera image indicating status (ie running, initializing, lost)
+  void DrawStatusBorder();
 protected:
 
   /// Set the need-to-drop flag to true
@@ -106,8 +112,7 @@ protected:
   /// Set the need-to-drop flag to false, used when map is first made from a CalibImage so no need to regenerate MKF
   void MarkKeyFrameAdded();
   
-  /// Draw a border around the camera image indicating status (ie running, initializing, lost)
-  void DrawStatusBorder();
+  
   
   /// Draw a border of given thickness and color
   void DrawBorder(CVD::ImageRef irBorder, int nThickness, const TooN::Vector<-1>& vColor);
@@ -147,6 +152,11 @@ protected:
   TooN::Vector<4> v4RunningColor;   ///< GUI border color for when system is tracking/running
   TooN::Vector<4> v4LostColor;      ///< GUI border color for when lost
   TooN::Vector<4> v4InactiveColor;  ///< GUI border color for when the tracker is inactive
+
+  TooN::Vector<4> v4BothGridVisible;  ///< GUI border color for when both checker board are visible
+  TooN::Vector<4> v4SingleGridVisible;  ///< GUI border color for when one checker board is visible
+  TooN::Vector<4> v4NoGridVisible;  ///< GUI border color for when no checker board is visible
+
 
   bool foundGridPattern;            /// flag to show when the tracker has found a grid pattern
   

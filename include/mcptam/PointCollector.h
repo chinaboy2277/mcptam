@@ -143,6 +143,8 @@ private:
   //PanTiltControl *PTC;                     /// Pan Tilt Control object
   GimbalControl *GC;
   int capture_index;                  /// index that keeps track of number of times we've succeessfully outputted data
+  double vPxErr[2] ={0};
+  bool vSuccess[2]  ={false};
 };
 
 #endif

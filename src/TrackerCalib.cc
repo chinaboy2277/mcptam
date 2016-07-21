@@ -79,6 +79,9 @@ TrackerCalib::TrackerCalib(Map &map, MapMakerClientBase& mapMaker, TaylorCameraM
   v4RunningColor = makeVector(0,1,0,1);  // green
   v4LostColor = makeVector(1,0,0,1);   // red
   v4InactiveColor = makeVector(0,0,0.5,1); // dark blue
+  v4BothGridVisible = makeVector(0,1,0,1);  // green
+  v4SingleGridVisible = makeVector(0,0,1,1);  // blue
+  v4NoGridVisible = makeVector(1,0,0,1);   // red
 }
 
 // Calls parent's Reset and resets some internal variables
@@ -131,9 +134,23 @@ void TrackerCalib::DrawBorder(CVD::ImageRef irOffset, int nThickness, const TooN
 // Draw a border around the camera image indicating status (ie running, initializing, lost)
 void TrackerCalib::DrawStatusBorder()
 {
+  //ROS_INFO("drawing...");
   CVD::ImageRef irOffset = mmDrawOffsets[mCamName];
-  
-  if(meCheckerboardStage == CHECKERBOARD_FIRST_STAGE)  // currently finding checkerboard
+
+  DrawBorder(irOffset, 5, v4NoGridVisible); // 5 pixel thick red border
+
+  if(singleGridVisible)
+  {
+    //ROS_INFO("single");
+    DrawBorder(irOffset, 5, v4SingleGridVisible); // 5 pixel thick blue border
+  }
+  if(bothGridVisible)
+  {
+    //ROS_INFO("both");
+     DrawBorder(irOffset, 5, v4BothGridVisible); // 5 pixel thick green border
+  }
+    
+  /*if(meCheckerboardStage == CHECKERBOARD_FIRST_STAGE)  // currently finding checkerboard
   {
     DrawBorder(irOffset, 5, v4FirstStageColor); // 5 pixel thick blue border
   }
@@ -155,7 +172,7 @@ void TrackerCalib::DrawStatusBorder()
   else  // not yet active in any way
   {
     DrawBorder(irOffset, 5, v4InactiveColor); // 5 pixel thick dark blue border
-  }
+  }*/
   
 }
 
@@ -399,7 +416,7 @@ void TrackerCalib::TrackFrame(CVD::Image<CVD::byte>& imFrame, ros::Time timestam
   if(meCheckerboardStage == CHECKERBOARD_FIRST_STAGE && !bFindCheckerboard)  // we are no longer trying to find checkerboard 
     ROS_BREAK(); // should never happen
     
-  if(mbDraw)
+  //if(mbDraw)
     DrawStatusBorder();
   
   // Do this here instead of after testing for mbInitRequested because only the TrackerCalib (in PoseCalibrator's posession) that 
