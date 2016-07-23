@@ -296,6 +296,7 @@ public:
   static double sdCandidateThresh;          ///< when using "thresh" criterion
   static double sdCandidateTopFraction;     ///< when using "percent" criterion
   static bool sbAdaptiveThresh;             ///< should we use an adaptive computation of
+  static std::string featureDetector;
   /// the feature detection threshold?
 
   TooN::SE3<> mse3CamFromBase;  ///< The current pose in a base frame, which is

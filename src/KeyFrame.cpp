@@ -71,6 +71,7 @@ double KeyFrame::sdCandidateTopFraction = 0.8;
 std::string KeyFrame::ssCandidateType = "fast";
 std::string KeyFrame::ssCandidateCriterion = "percent";
 bool KeyFrame::sbAdaptiveThresh = true;
+std::string KeyFrame::featureDetector = "FAST";
 int Level::snNumPrev = 2;
 
 KeyFrame::KeyFrame(MultiKeyFrame* pMKF, std::string name) : mCamName(name), mpParent(pMKF)
@@ -262,6 +263,12 @@ std::tuple<double, double, double> KeyFrame::MakeKeyFrame_Lite(CVD::Image<CVD::b
     dMaskTime += (ros::WallTime::now() - startTime).toSec();
       startTime = ros::WallTime::now();
 
+      cv::Ptr<cv::FeatureDetector> defaultDetector;
+      std::string detector= KeyFrame::featureDetector;
+      defaultDetector = cv::FeatureDetector::create(detector);
+      
+      cv::Mat img(lev.image.size().y, lev.image.size().x, CV_8U, lev.image.data(), lev.image.row_stride());
+
     if (KeyFrame::sbAdaptiveThresh)
       {
       // This version of adaptive thresholding works on the following principle: as the FAST threshold is decreased, the
@@ -280,10 +287,23 @@ std::tuple<double, double, double> KeyFrame::MakeKeyFrame_Lite(CVD::Image<CVD::b
 
       // Perform detection with minimum threshold. Later we'll get each corner's score which will allow us to make a
       // historgram.
-          fast_corner_detect_10(lev.image, lev.vCorners, MIN_FAST_THRESH);
+          //fast_corner_detect_10(lev.image, lev.vCorners, MIN_FAST_THRESH);
+        // Copy feature poitns from opencv
+        std::vector<cv::KeyPoint> keypoints;
+        //defaultDetector->set("threshold", MIN_FAST_THRESH);
+        defaultDetector->detect(img, keypoints);
+        std::vector<int> vScores;
 
-          std::vector<int> vScores;
-          fast_corner_score_10(lev.image, lev.vCorners, MIN_FAST_THRESH, vScores);  // Score them
+        for(size_t i = 0; i < keypoints.size(); ++i)
+        {
+          lev.vCorners.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+          vScores.push_back(keypoints[i].response);
+        }
+
+          
+          //fast_corner_score_10(lev.image, lev.vCorners, MIN_FAST_THRESH, vScores);  // Score them
+
+
 
       for (unsigned j = 0; j < vScores.size(); ++j)
       {
@@ -347,34 +367,71 @@ std::tuple<double, double, double> KeyFrame::MakeKeyFrame_Lite(CVD::Image<CVD::b
 
       if (i == 0)
           {
-              fast_corner_detect_10(lev.image, lev.vCorners, 10);
+              std::vector<cv::KeyPoint> keypoints;
+              //fast_corner_detect_10(lev.image, lev.vCorners, 10);
               lev.nFastThresh = 10;
+              //defaultDetector->set("threshold", lev.nFastThresh);
+              defaultDetector->detect(img, keypoints);
+              for(size_t i=0; i <keypoints.size(); ++i)
+              {
+                lev.vCorners.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+              }
           }
       if (i == 1)
           {
-              fast_corner_detect_10(lev.image, lev.vCorners, 15);
+              //fast_corner_detect_10(lev.image, lev.vCorners, 15);
               lev.nFastThresh = 15;
+              std::vector<cv::KeyPoint> keypoints;
+              //defaultDetector->set("threshold", lev.nFastThresh);
+              defaultDetector->detect(img, keypoints);
+              for(size_t i=0; i <keypoints.size(); ++i)
+              {
+                lev.vCorners.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+              }
           }
       if (i == 2)
           {
-              fast_corner_detect_10(lev.image, lev.vCorners, 15);
+              //fast_corner_detect_10(lev.image, lev.vCorners, 15);
               lev.nFastThresh = 15;
+              std::vector<cv::KeyPoint> keypoints;
+              //defaultDetector->set("threshold", lev.nFastThresh);
+              defaultDetector->detect(img, keypoints);
+              for(size_t i=0; i <keypoints.size(); ++i)
+              {
+                lev.vCorners.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+              }
           }
       if (i == 3)
           {
-              fast_corner_detect_10(lev.image, lev.vCorners, 10);
+              //fast_corner_detect_10(lev.image, lev.vCorners, 10);
               lev.nFastThresh = 10;
+              std::vector<cv::KeyPoint> keypoints;
+              //defaultDetector->set("threshold", lev.nFastThresh);
+              defaultDetector->detect(img, keypoints);
+              for(size_t i=0; i <keypoints.size(); ++i)
+              {
+                lev.vCorners.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+              }
           }
 
           //do nonmax suppression
-
+          std::vector<cv::KeyPoint> keypoints;
+          //defaultDetector->set("threshold", lev.nFastThresh);
+          defaultDetector->detect(img, keypoints);
           std::vector<CVD::ImageRef> vMaxCornersTemp;
-          CVD::fast_nonmax(lev.image, lev.vCorners, lev.nFastThresh, vMaxCornersTemp);
+
+          //CVD::fast_nonmax(lev.image, lev.vCorners, lev.nFastThresh, vMaxCornersTemp);
 
           std::vector<int> vMaxScoresTemp;
-          CVD::fast_corner_score_10(lev.image, vMaxCornersTemp, lev.nFastThresh, vMaxScoresTemp);
+          //CVD::fast_corner_score_10(lev.image, vMaxCornersTemp, lev.nFastThresh, vMaxScoresTemp);
+          
+          for(size_t i=0; i <keypoints.size(); ++i)
+          {
+            vMaxCornersTemp.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+            vMaxScoresTemp.push_back(keypoints[i].response);
+          }
 
-          ROS_ASSERT(vMaxScoresTemp.size() == vMaxCornersTemp.size());
+          //ROS_ASSERT(vMaxScoresTemp.size() == vMaxCornersTemp.size());
 
           for(unsigned i=0; i < vMaxCornersTemp.size(); ++i)
           {
@@ -426,10 +483,16 @@ void KeyFrame::MakeKeyFrame_Rest()
   std::string type = KeyFrame::ssCandidateType;            // "shi" or "fast"
   std::string criterion = KeyFrame::ssCandidateCriterion;  // "percent" or "thresh"
 
+  cv::Ptr<cv::FeatureDetector> defaultDetector;
+  std::string detector = KeyFrame::featureDetector;
+  defaultDetector = cv::FeatureDetector::create(detector);
+  
+
   // For each level...
   for (int l = 0; l < LEVELS; l++)
   {
     Level& lev = maLevels[l];
+    cv::Mat img(lev.image.size().y, lev.image.size().x, CV_8U, lev.image.data(), lev.image.row_stride());
 
     // .. find those FAST corners which are maximal..
 
@@ -438,12 +501,21 @@ void KeyFrame::MakeKeyFrame_Rest()
     if (type == "fast")
     {
       std::vector<CVD::ImageRef> vMaxCornersTemp;
-      CVD::fast_nonmax(lev.image, lev.vCorners, lev.nFastThresh, vMaxCornersTemp);
+      //CVD::fast_nonmax(lev.image, lev.vCorners, lev.nFastThresh, vMaxCornersTemp);
 
+      std::vector<cv::KeyPoint> keypoints;
       std::vector<int> vMaxScoresTemp;
-      CVD::fast_corner_score_10(lev.image, vMaxCornersTemp, lev.nFastThresh, vMaxScoresTemp);
+      //CVD::fast_corner_score_10(lev.image, vMaxCornersTemp, lev.nFastThresh, vMaxScoresTemp);
+      //defaultDetector->set("threshold", lev.nFastThresh);
+      defaultDetector->detect(img, keypoints);
+      for(size_t i=0; i <keypoints.size(); ++i)
+      {
+        vMaxCornersTemp.push_back(CVD::ImageRef(keypoints[i].pt.x, keypoints[i].pt.y));
+        vMaxScoresTemp.push_back(keypoints[i].response);
+      }
 
-      ROS_ASSERT(vMaxScoresTemp.size() == vMaxCornersTemp.size());
+
+      //ROS_ASSERT(vMaxScoresTemp.size() == vMaxCornersTemp.size());
 
       for (unsigned i = 0; i < vMaxCornersTemp.size(); ++i)
       {

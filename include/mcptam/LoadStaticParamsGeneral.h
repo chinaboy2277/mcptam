@@ -61,6 +61,7 @@ void LoadStaticParamsGeneral()
   nh_priv.getParam("kf_candidate_thresh", KeyFrame::sdCandidateThresh);
   nh_priv.getParam("kf_distance_mean_diff_fraction", KeyFrame::sdDistanceMeanDiffFraction);
   nh_priv.getParam("kf_adaptive_thresh", KeyFrame::sbAdaptiveThresh);
+  nh_priv.getParam("kf_feature_detector", KeyFrame::featureDetector);
 
   nh_priv.getParam("sbi_width", SmallBlurryImage::sirSize.x);
   nh_priv.getParam("sbi_height", SmallBlurryImage::sirSize.y);
