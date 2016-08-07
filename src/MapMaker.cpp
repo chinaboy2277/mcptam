@@ -59,6 +59,7 @@ MapMaker::MapMaker(Map &map, TaylorCameraMap &cameras, BundleAdjusterBase &bundl
   start();
   AddNewMKFSeq = 0;
   BundleSeq = 0;
+  LocalBASeq = 0;
 }
 
 MapMaker::~MapMaker()
@@ -220,10 +221,14 @@ void MapMaker::run()
       timingMsg.map_num_mkfs = mMap.mlpMultiKeyFrames.size();
       timingMsg.map_num_points = mMap.mlpPoints.size();
 
+      ROS_WARN_STREAM("SyncIssue: calling local BA #" << LocalBASeq << " MKF Size " << mMap.mlpMultiKeyFrames.size() << " Points " << mMap.mlpPoints.size());
       ros::WallTime start = ros::WallTime::now();
 
       int nAccepted = mBundleAdjuster.BundleAdjustRecent(vOutliers);
       // mdMaxCov = mBundleAdjuster.GetMaxCov();
+
+      ROS_WARN_STREAM("SyncIssue: Finished local BA #" << LocalBASeq << " MKF Size " << mMap.mlpMultiKeyFrames.size() << " Points " << mMap.mlpPoints.size());
+      LocalBASeq++;
 
       timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
       timingMsg.header.stamp = ros::Time::now();
@@ -281,63 +286,63 @@ void MapMaker::run()
     // Run global bundle adjustment?
     if (mBundleAdjuster.ConvergedRecent() && !mBundleAdjuster.ConvergedFull() && IncomingQueueSize() == 0)
     {
-        ROS_WARN_STREAM("Started Global BA #" << BundleSeq );
+        ROS_WARN_STREAM("SyncIssue: Started Global BA #" << BundleSeq );
 
-      ROS_WARN_STREAM("Started Number of map points: " << mMap.mlpPoints.size());
-      ROS_INFO("MapMaker: Bundle adjusting all");
-      std::vector<std::pair<KeyFrame *, MapPoint *>> vOutliers;
+        ROS_WARN_STREAM("SyncIssue: Started Number of map points: " << mMap.mlpPoints.size());
+        ROS_INFO("MapMaker: Bundle adjusting all");
+        std::vector<std::pair<KeyFrame *, MapPoint *>> vOutliers;
 
-      mBundleAdjuster.UseTukey(mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2);
-      mBundleAdjuster.UseTwoStep((mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2));
+        mBundleAdjuster.UseTukey(mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2);
+        mBundleAdjuster.UseTwoStep((mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2));
 
-      mcptam::MapMakerTiming timingMsg;
-      timingMsg.map_num_mkfs = mMap.mlpMultiKeyFrames.size();
-      timingMsg.map_num_points = mMap.mlpPoints.size();
+        mcptam::MapMakerTiming timingMsg;
+        timingMsg.map_num_mkfs = mMap.mlpMultiKeyFrames.size();
+        timingMsg.map_num_points = mMap.mlpPoints.size();
 
-      ros::WallTime start = ros::WallTime::now();
+        ros::WallTime start = ros::WallTime::now();
 
-      int nAccepted = mBundleAdjuster.BundleAdjustAll(vOutliers);
+        int nAccepted = mBundleAdjuster.BundleAdjustAll(vOutliers);
 
-      timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
-      timingMsg.header.stamp = ros::Time::now();
-      timingMsg.accepted = nAccepted;
-      timingMsg.total = mBundleAdjuster.GetTotalIterations();
-      mGlobalTimingPub.publish(timingMsg);
+        timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
+        timingMsg.header.stamp = ros::Time::now();
+        timingMsg.accepted = nAccepted;
+        timingMsg.total = mBundleAdjuster.GetTotalIterations();
+        mGlobalTimingPub.publish(timingMsg);
 
-      mdMaxCov = mBundleAdjuster.GetMaxCov();
+        mdMaxCov = mBundleAdjuster.GetMaxCov();
 
-      ROS_DEBUG_STREAM("Accepted iterations: " << nAccepted);
-      ROS_DEBUG_STREAM("Number of outliers: " << vOutliers.size());
-      ROS_DEBUG_STREAM("Max cov: " << mdMaxCov);
+        ROS_DEBUG_STREAM("Accepted iterations: " << nAccepted);
+        ROS_DEBUG_STREAM("Number of outliers: " << vOutliers.size());
+        ROS_DEBUG_STREAM("Max cov: " << mdMaxCov);
 
-      if (nAccepted < 0)  // bad
-      {
-        mnNumConsecutiveFailedBA++;
-        if (mnNumConsecutiveFailedBA > MapMakerServerBase::snMaxConsecutiveFailedBA)  // very bad
+        if (nAccepted < 0)  // bad
         {
-          ROS_ERROR("MapMaker: All BA failed, requesting reset");
-          RequestResetInternal();
+          mnNumConsecutiveFailedBA++;
+          if (mnNumConsecutiveFailedBA > MapMakerServerBase::snMaxConsecutiveFailedBA)  // very bad
+          {
+            ROS_ERROR("MapMaker: All BA failed, requesting reset");
+            RequestResetInternal();
+          }
         }
-      }
-      else if (nAccepted > 0)
-      {
-        mnNumConsecutiveFailedBA = 0;
-        HandleOutliers(vOutliers);
-        PublishMapVisualization();
-
-        if (mState == MM_INITIALIZING && (mdMaxCov < MapMakerServerBase::sdInitCovThresh || mbStopInit))
+        else if (nAccepted > 0)
         {
-          ROS_INFO_STREAM("INITIALIZING, Max cov " << mdMaxCov << " below threshold "
-                          << MapMakerServerBase::sdInitCovThresh
-                          << ", switching to MM_RUNNING");
-          mState = MM_RUNNING;
-          ClearIncomingQueue();
-          mbStopInit = false;
-        }
-      }
-        ROS_WARN_STREAM("Finished Global BA #" << BundleSeq );
-      ROS_WARN_STREAM("Finished Number of map points: " << mMap.mlpPoints.size());
+          mnNumConsecutiveFailedBA = 0;
+          HandleOutliers(vOutliers);
+          PublishMapVisualization();
 
+          if (mState == MM_INITIALIZING && (mdMaxCov < MapMakerServerBase::sdInitCovThresh || mbStopInit))
+          {
+            ROS_INFO_STREAM("INITIALIZING, Max cov " << mdMaxCov << " below threshold "
+                            << MapMakerServerBase::sdInitCovThresh
+                            << ", switching to MM_RUNNING");
+            mState = MM_RUNNING;
+            ClearIncomingQueue();
+            mbStopInit = false;
+          }
+        }
+
+        ROS_WARN_STREAM("SyncIssue: Finished Global BA #" << BundleSeq );
+        ROS_WARN_STREAM("SyncIssue: Finished Global BA #" << BundleSeq << " Number of map points: " << mMap.mlpPoints.size());
         BundleSeq++;
     }
 
@@ -381,9 +386,9 @@ void MapMaker::run()
     // Any new key-frames to be added?
     if (IncomingQueueSize() > 0) // SABA
     {
-        ROS_WARN_STREAM("calling AddMultiKeyFrameFromTopOfQueue #" << AddNewMKFSeq);
+        ROS_WARN_STREAM("SyncIssue: calling AddMultiKeyFrameFromTopOfQueue #" << AddNewMKFSeq);
       AddMultiKeyFrameFromTopOfQueue();  // Integrate into map data struct, and process
-        ROS_WARN_STREAM("Finished AddMultiKeyFrameFromTopOfQueue  #" << AddNewMKFSeq);
+        ROS_WARN_STREAM("SyncIssue: Finished AddMultiKeyFrameFromTopOfQueue  #" << AddNewMKFSeq);
         AddNewMKFSeq++;
 
     }  

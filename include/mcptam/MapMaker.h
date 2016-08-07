@@ -155,6 +155,8 @@ protected:
 
   unsigned int AddNewMKFSeq;
   unsigned int BundleSeq;
+  unsigned int LocalBASeq;
+
   unsigned int seed = 1;  ///< Seed for threadsafe rand_r
 };
 

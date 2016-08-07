@@ -506,9 +506,9 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
-                  ROS_WARN_STREAM("calling EvaluateTracker #" << EvalSeq );
+                  ROS_WARN_STREAM("SyncIssue: calling EvaluateTracker #" << EvalSeq );
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
-                  ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
+                  ROS_WARN_STREAM("SyncIssue: Finished EvaluateTracker #" << EvalSeq);
                   EvalSeq++;
          
           bool addEntropyMKF = false;
@@ -520,7 +520,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
           if( (trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD ) )
           {
           		if(mMap.mbFreshMap)
+                {
+                    ROS_WARN_STREAM("SyncIssue: mbFreshMap=true EvaluateTracker #" << EvalSeq-1);
           			addEntropyMKF = true;
+                }
           		else
           		{
           			ROS_WARN_STREAM("Waiting for fresh map...");
@@ -588,11 +591,11 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
                   
                  // ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestBufferKeyframeIndex] << " New: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n"); 
                     
-                  ROS_WARN_STREAM("calling AddNewKeyFrame #" << AddNewKFSeq);
+                  ROS_WARN_STREAM("SyncIssue: calling AddNewKeyFrame #" << AddNewKFSeq);
 
                   AddNewKeyFrameFromBuffer(bestSortIndex); // Original
 
-                  ROS_WARN_STREAM("Finished AddNewKeyFrame #" << AddNewKFSeq);
+                  ROS_WARN_STREAM("SyncIssue: Finished AddNewKeyFrame #" << AddNewKFSeq);
                   AddNewKFSeq++;
                   
                   bestBufferKeyframeIndex = 0;
