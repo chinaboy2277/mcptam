@@ -648,6 +648,8 @@ protected:
   
   // testing
   bool mbAddNext;  ///< Add the next MKF now
+  unsigned int AddNewKFSeq; 
+  unsigned int EvalSeq;
 
    void AddNewKeyFrameFromBuffer(); //SABA
    void RecordMeasurementsAndBufferMKF(); //SABA

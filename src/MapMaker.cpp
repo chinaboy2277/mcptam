@@ -57,6 +57,8 @@ MapMaker::MapMaker(Map &map, TaylorCameraMap &cameras, BundleAdjusterBase &bundl
 
   Reset();
   start();
+  AddNewMKFSeq = 0;
+  BundleSeq = 0;
 }
 
 MapMaker::~MapMaker()
@@ -279,8 +281,10 @@ void MapMaker::run()
     // Run global bundle adjustment?
     if (mBundleAdjuster.ConvergedRecent() && !mBundleAdjuster.ConvergedFull() && IncomingQueueSize() == 0)
     {
+        ROS_WARN_STREAM("Started Global BA #" << BundleSeq );
+
+      ROS_WARN_STREAM("Started Number of map points: " << mMap.mlpPoints.size());
       ROS_INFO("MapMaker: Bundle adjusting all");
-      ROS_INFO_STREAM("MapMaker: Number of map points: " << mMap.mlpPoints.size());
       std::vector<std::pair<KeyFrame *, MapPoint *>> vOutliers;
 
       mBundleAdjuster.UseTukey(mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2);
@@ -331,6 +335,10 @@ void MapMaker::run()
           mbStopInit = false;
         }
       }
+        ROS_WARN_STREAM("Finished Global BA #" << BundleSeq );
+      ROS_WARN_STREAM("Finished Number of map points: " << mMap.mlpPoints.size());
+
+        BundleSeq++;
     }
 
     if (ResetRequested())
@@ -371,8 +379,14 @@ void MapMaker::run()
     }
 
     // Any new key-frames to be added?
-    if (IncomingQueueSize() > 0)
+    if (IncomingQueueSize() > 0) // SABA
+    {
+        ROS_WARN_STREAM("calling AddMultiKeyFrameFromTopOfQueue #" << AddNewMKFSeq);
       AddMultiKeyFrameFromTopOfQueue();  // Integrate into map data struct, and process
+        ROS_WARN_STREAM("Finished AddMultiKeyFrameFromTopOfQueue  #" << AddNewMKFSeq);
+        AddNewMKFSeq++;
+
+    }  
 
     if (ResetRequested())
     {

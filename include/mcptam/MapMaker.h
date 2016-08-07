@@ -153,6 +153,8 @@ protected:
   ros::Publisher mLocalTimingPub;
   ros::Publisher mGlobalTimingPub;
 
+  unsigned int AddNewMKFSeq;
+  unsigned int BundleSeq;
   unsigned int seed = 1;  ///< Seed for threadsafe rand_r
 };
 

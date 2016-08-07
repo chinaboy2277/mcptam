@@ -133,6 +133,8 @@ Tracker::Tracker(Map& map, MapMakerClientBase& mapmaker, TaylorCameraMap& camera
   mNodeHandle.param<bool>("USE_CPER", mbUseCper, true); // SA
   mNodeHandlePrivate.param<int>("MKF_BUFFER_CAPACITY", muiMKFBufferCapacity, MKF_BUFFER_SIZE); // SA
  mMultiKeyFrameBuffer.setCapacity(muiMKFBufferCapacity); //SA
+ AddNewKFSeq = 0;
+ EvalSeq = 0;
 }
 
 Tracker::~Tracker()
@@ -504,7 +506,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
+                  ROS_WARN_STREAM("calling EvaluateTracker #" << EvalSeq );
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
+                  ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
+                  EvalSeq++;
          
           bool addEntropyMKF = false;
 
@@ -530,18 +535,18 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
               ROS_WARN_STREAM("Original buffer size: " << mvKeyFrameBuffer.size() << " stream buffer size: " << mMultiKeyFrameBuffer.Size());
 
               // Print first 10 elements of original and modified buffers
-              ROS_WARN("------ BEFORE SORT ------- \n");
+              //ROS_WARN("------ BEFORE SORT ------- \n");
 
-              ROS_INFO("Printing 10 first elements in original buffer:");
+              //ROS_INFO("Printing 10 first elements in original buffer:");
               std::stringstream buffer; 
               buffer << "\n";
               for(unsigned int i=0; i<vKeyframeScores.size() && i<10; i++)
               {
                   buffer << "(" <<  vKeyframeScores[i].first << ", " << mvKeyFrameBuffer[vKeyframeScores[i].second] << ")\n";
               }
-              ROS_INFO_STREAM(buffer.str());
+             // ROS_INFO_STREAM(buffer.str());
 
-              mMultiKeyFrameBuffer.PrintBuffer(10);
+             // mMultiKeyFrameBuffer.PrintBuffer(10);
 
 
            
@@ -552,10 +557,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
 
 
-              ROS_WARN("------ AFTER SORT ------- \n");
+            //  ROS_WARN("------ AFTER SORT ------- \n");
 
               // Print first 10 elements of original and modified buffers after sort
-             
+             /*
               ROS_INFO("Printing 10 first elements in original buffer:");
               buffer.str(std::string());
               buffer.clear();
@@ -567,7 +572,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
               ROS_INFO_STREAM(buffer.str());
 
               mMultiKeyFrameBuffer.PrintBuffer(10);
-
+            */
 
 
               if(vKeyframeScores.size()>0 && !mMultiKeyFrameBuffer.Empty()) // && condition: Makes sure original and
@@ -576,14 +581,19 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
                   double bestSortIndex = vKeyframeScores[0].second;
 
                   // Compare original and modified code.
-                  ROS_INFO_STREAM("Best Score -- Original: " << bestBufferKeyframeScore << " New: "<< mMultiKeyFrameBuffer.AtIndex(0).first);
+              //    ROS_INFO_STREAM("Best Score -- Original: " << bestBufferKeyframeScore << " New: "<< mMultiKeyFrameBuffer.AtIndex(0).first);
                   
-                  ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestSortIndex] << " New: "<< mMultiKeyFrameBuffer.AtIndex(0).second);
+                //  ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestSortIndex] << " New: "<< mMultiKeyFrameBuffer.AtIndex(0).second);
                  
                   
-                  ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestBufferKeyframeIndex] << " New: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n"); 
+                 // ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestBufferKeyframeIndex] << " New: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n"); 
+                    
+                  ROS_WARN_STREAM("calling AddNewKeyFrame #" << AddNewKFSeq);
 
                   AddNewKeyFrameFromBuffer(bestSortIndex); // Original
+
+                  ROS_WARN_STREAM("Finished AddNewKeyFrame #" << AddNewKFSeq);
+                  AddNewKFSeq++;
                   
                   bestBufferKeyframeIndex = 0;
                   bestBufferKeyframeScore = 0;
@@ -2204,9 +2214,9 @@ void Tracker::AddNewKeyFrameFromBuffer(int bufferPosition)
     //pull out the keyframe from the buffer
     MultiKeyFrame* mpTempMKF =  mvKeyFrameBuffer[bufferPosition];
 
-    ROS_WARN("--------- In AddNewKeyFrameFromBuffer(int bufferPosition) -----------");
-    ROS_INFO_STREAM("Score -- Original: " << vKeyframeScores[0].first << " Modified: "<< mMultiKeyFrameBuffer.AtIndex(0).first);
-    ROS_INFO_STREAM("MKF Pointer -- Original: " << mvKeyFrameBuffer[bufferPosition] << " Modified: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n");
+   // ROS_WARN("--------- In AddNewKeyFrameFromBuffer(int bufferPosition) -----------");
+  //  ROS_INFO_STREAM("Score -- Original: " << vKeyframeScores[0].first << " Modified: "<< mMultiKeyFrameBuffer.AtIndex(0).first);
+  //  ROS_INFO_STREAM("MKF Pointer -- Original: " << mvKeyFrameBuffer[bufferPosition] << " Modified: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n");
 
     //set it's status to NOT a bufferkeyframe (it's getting inserted into the map!
     mpTempMKF->isBufferMKF = false;
