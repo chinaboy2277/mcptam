@@ -506,18 +506,26 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
-                  ROS_WARN_STREAM("SyncIssue: calling EvaluateTracker #" << EvalSeq );
+          ROS_WARN_STREAM("SyncIssue: calling EvaluateTracker #" << EvalSeq );
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
-                  ROS_WARN_STREAM("SyncIssue: Finished EvaluateTracker #" << EvalSeq);
-                  EvalSeq++;
+          ROS_WARN_STREAM("SyncIssue: Finished EvaluateTracker #" << EvalSeq);
+          EvalSeq++;
          
           bool addEntropyMKF = false;
 
           //RecordMeasurementsAndBufferKeyFrame(); // Original
           RecordMeasurementsAndBufferMKF();      // Original and Modified merged.
 
+          if(mMap.mbAddMKFDone && trackerAddMKF)
+          {
+              std::sort(mMultiKeyFrameBuffer.GetBuffer().begin(), mMultiKeyFrameBuffer.GetBuffer().end(), SortPair<double, MultiKeyFrame*>()); // Modified
+              MultiKeyFrame* mkfTemp = mMultiKeyFrameBuffer.AtIndex(0).second;
+             mMultiKeyFrameBuffer.Clear();
+             RecordMeasurementsAndBufferMKF(mkfTemp); 
+             trackerAddMKF = false;
+          }
 
-          if( (trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD ) )
+          if( mMap.mbAddMKFDone && ((trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD )) )
           {
           		if(mMap.mbFreshMap)
                 {
@@ -535,7 +543,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
           {
               mMessageForUser << " SHOULD BE Adding MultiKeyFrame to Map";
 
-              ROS_WARN_STREAM("Original buffer size: " << mvKeyFrameBuffer.size() << " stream buffer size: " << mMultiKeyFrameBuffer.Size());
+              ROS_WARN_STREAM( "SyncIssue: Stream buffer size: " << mMultiKeyFrameBuffer.Size());
 
               // Print first 10 elements of original and modified buffers
               //ROS_WARN("------ BEFORE SORT ------- \n");
@@ -559,25 +567,6 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
 
 
-
-            //  ROS_WARN("------ AFTER SORT ------- \n");
-
-              // Print first 10 elements of original and modified buffers after sort
-             /*
-              ROS_INFO("Printing 10 first elements in original buffer:");
-              buffer.str(std::string());
-              buffer.clear();
-              buffer << "\n";
-              for(unsigned int i=0; i<vKeyframeScores.size() && i<10; i++)
-              {
-                  buffer << "(" <<  vKeyframeScores[i].first << ", " << mvKeyFrameBuffer[vKeyframeScores[i].second] << ")\n";
-              }
-              ROS_INFO_STREAM(buffer.str());
-
-              mMultiKeyFrameBuffer.PrintBuffer(10);
-            */
-
-
               if(vKeyframeScores.size()>0 && !mMultiKeyFrameBuffer.Empty()) // && condition: Makes sure original and
                                                                             // modified buffers are (non)empty at the same time.
               {
@@ -594,7 +583,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
                   ROS_WARN_STREAM("SyncIssue: calling AddNewKeyFrame #" << AddNewKFSeq);
 
                   AddNewKeyFrameFromBuffer(bestSortIndex); // Original
-
+                  trackerAddMKF = true;
                   ROS_WARN_STREAM("SyncIssue: Finished AddNewKeyFrame #" << AddNewKFSeq);
                   AddNewKFSeq++;
                   
@@ -2023,6 +2012,115 @@ void Tracker::UpdateCamsFromWorld(MultiKeyFrame* mpTempMKF)
     }
 }
 
+// ---------------------------------------------------
+void Tracker::RecordMeasurementsAndBufferMKF(MultiKeyFrame* mpTempMKF)
+{
+    //save all the tracker measurements
+
+    UpdateCamsFromWorld(mpTempMKF);
+    mpTempMKF->isBufferMKF = true;
+
+    //create vector for holding all the tracker meas data
+    //std::vector<TrackerMeasData> pvTrackerMeasData;
+
+    double totalEntropyReduction = 0;
+    int totalEntropyPoints = 0;
+    double totalPreviousEntropy = 0;
+    double totalEntropyReductionMod = 0;
+    int totalEntropyPointsMod = 0;
+    double totalPreviousEntropyMod = 0;
+
+    for(unsigned i=0; i < mvCurrCamNames.size(); ++i)
+    {
+        std::string camName = mvCurrCamNames[i];
+        KeyFrame& kf = *mpTempMKF->mmpKeyFrames[camName];
+
+        for(TrackerDataPtrVector::iterator td_it = mvIterationSets[i].begin(); td_it!= mvIterationSets[i].end(); ++td_it)
+        {
+            TrackerData td = *(*td_it);
+
+            if(!td.mbFound || td.mPoint.mbBad)
+                continue;
+
+            Measurement* pMeas = new Measurement;
+            pMeas->eSource = Measurement::SRC_TRACKER;
+            pMeas->v2RootPos = td.mv2Found;
+            pMeas->nLevel = td.mnSearchLevel;
+            pMeas->bSubPix = td.mbDidSubPix;
+
+            MapPoint& point = td.mPoint;
+            kf.AddMeasurement(&point, pMeas); //add this measurement to the kf
+
+            double priorPointCovariance = point.depthCovariance;
+            double prevPointEntropyOrig = 0, prevPointEntropyMod = 0; 
+
+            if( !std::isfinite(priorPointCovariance) || priorPointCovariance < EXP_7 ) 
+                priorPointCovariance = EXP_8;
+
+            double entropyReductionOrig = EvaluatePoint(this, point, kf, priorPointCovariance, pMeas->nLevel, prevPointEntropyOrig); // Original 
+
+            double entropyReductionMod = EvaluatePointEntropyReduction(this, point, kf, priorPointCovariance, pMeas->nLevel, prevPointEntropyMod); // Funtionalized 
+
+            // Compare original and functionalized versions of EvaluatePoint 
+#if DEBUG_CPER
+            ROS_WARN("---------------- In RecordMeasurementsAndBufferMKF() ------------ ");
+
+            if (abs(prevPointEntropyOrig - prevPointEntropyMod) > EPSILON)
+            {
+                ROS_ERROR_STREAM("Functionalized EvaluatePoint doesn't work. orig prev entropy:" << prevPointEntropyOrig << " functionalized: " << prevPointEntropyMod);
+            }
+            
+            if (abs(entropyReductionOrig - entropyReductionMod) > EPSILON)
+            {
+                ROS_ERROR_STREAM("Functionalized EvaluatePoint doesn't work. orig entropy reduction:" << entropyReductionOrig << " functionalized: " << entropyReductionMod);
+            }
+            else
+            {
+                ROS_INFO_STREAM("Functionalized EValuatePoint works. orig:" << entropyReductionOrig << " functionalized: " << entropyReductionMod);
+            }
+#endif
+
+            if(!isnan(entropyReductionOrig) && !isnan(entropyReductionMod) ) // && condition: makes sure (again) both values are not nan.
+            {
+                totalPreviousEntropy+=prevPointEntropyOrig;
+                totalEntropyReduction +=entropyReductionOrig;
+                totalEntropyPoints++;
+
+                totalPreviousEntropyMod  += prevPointEntropyMod;
+                totalEntropyReductionMod += entropyReductionMod;
+                totalEntropyPointsMod++;
+
+            }
+        }
+    }
+
+      // Original buffer
+     mvKeyFrameBuffer.push_back(mpTempMKF); //store the MKF
+     score_pair mp; mp.first = totalEntropyReduction; mp.second = mvKeyFrameBuffer.size() - 1;
+     vKeyframeScores.push_back(mp);
+
+     if(totalEntropyReduction > bestBufferKeyframeScore) //if we have a new winner
+     {
+         bestBufferKeyframeScore = totalEntropyReduction;
+         bestBufferKeyframeIndex = mvKeyFrameBuffer.size() - 1;
+     }
+
+
+    // Modified: Use StreamBuffer for buffering MKFs
+    MKFScorePair pair;
+    pair.first = totalEntropyReductionMod; pair.second = mpTempMKF;
+    mMultiKeyFrameBuffer.Enqueue(pair);
+
+#if DEBUG_CPER
+    ROS_WARN_STREAM("Orig: mkf:" << mvKeyFrameBuffer.back() << " score: " << vKeyframeScores.back().first << " ---  Modified: mkf: " << mMultiKeyFrameBuffer.Back().second << " score: " << mMultiKeyFrameBuffer.Back().first);
+#endif
+
+}
+
+
+
+
+
 void Tracker::RecordMeasurementsAndBufferMKF()
 {
     //save all the tracker measurements
@@ -2292,6 +2390,7 @@ void Tracker::AddNewKeyFrameFromBuffer(int bufferPosition)
 
 void Tracker::AddNewKeyFrameFromBuffer()
 {
+    mMap.mbAddMKFDone = false;
     if(mMultiKeyFrameBuffer.Empty())
         return;
 

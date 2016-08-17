@@ -557,6 +557,7 @@ void MapMaker::AddMultiKeyFrameFromTopOfQueue()
 
   lock.lock();
   mqpMultiKeyFramesFromTracker.pop_front();
+  mMap.mbAddMKFDone = true;
   lock.unlock();
 }
 

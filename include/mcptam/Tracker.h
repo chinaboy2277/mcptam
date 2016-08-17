@@ -650,9 +650,11 @@ protected:
   bool mbAddNext;  ///< Add the next MKF now
   unsigned int AddNewKFSeq; 
   unsigned int EvalSeq;
+  bool trackerAddMKF;
 
    void AddNewKeyFrameFromBuffer(); //SABA
    void RecordMeasurementsAndBufferMKF(); //SABA
+   void RecordMeasurementsAndBufferMKF(MultiKeyFrame* mkf); //SABA
 };
 
 #endif  // MCPTAM_TRACKER_H

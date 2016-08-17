@@ -153,6 +153,7 @@ public:
   boost::mutex mMutex;  ///< To allow multi-threaded operation safely
   bool mbGood;          ///< Is the map initialized and operational?
   bool mbFreshMap; ///< Is the map Fresh from a BA operation?  
+  bool mbAddMKFDone; //Saba
 };
 
 #endif  // MCPTAM_MAP_H
