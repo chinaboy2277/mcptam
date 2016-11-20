@@ -154,7 +154,10 @@ protected:
   ros::Publisher mGlobalTimingPub;
 
   unsigned int AddNewMKFSeq;
-  unsigned int BundleSeq;
+  unsigned int AddFromTopSeq;
+  unsigned int BundleLocalSeq;
+  unsigned int BundleAllSeq;
+
   unsigned int seed = 1;  ///< Seed for threadsafe rand_r
 };
 

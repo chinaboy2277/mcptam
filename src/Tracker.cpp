@@ -130,7 +130,7 @@ Tracker::Tracker(Map& map, MapMakerClientBase& mapmaker, TaylorCameraMap& camera
 
   bestBufferKeyframeScore = 0;
  
-  mNodeHandle.param<bool>("USE_CPER", mbUseCper, true); // SA
+  mNodeHandle.param<bool>("/mcptam/USE_CPER", mbUseCper, true); // SA
   mNodeHandlePrivate.param<int>("MKF_BUFFER_CAPACITY", muiMKFBufferCapacity, MKF_BUFFER_SIZE); // SA
  mMultiKeyFrameBuffer.setCapacity(muiMKFBufferCapacity); //SA
  AddNewKFSeq = 0;
@@ -506,10 +506,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
-                  ROS_WARN_STREAM("calling EvaluateTracker #" << EvalSeq );
+          ROS_WARN_STREAM("calling EvaluateTracker #" << EvalSeq++ );
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
-                  ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
-                  EvalSeq++;
+                  //ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
+                 // EvalSeq++;
          
           bool addEntropyMKF = false;
 
@@ -520,7 +520,9 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
           if( (trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD ) )
           {
           		if(mMap.mbFreshMap)
+			{
           			addEntropyMKF = true;
+			}
           		else
           		{
           			ROS_WARN_STREAM("Waiting for fresh map...");
@@ -530,20 +532,20 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
           if(addEntropyMKF ) //add new keyframe //todo (adas) figure how to to limit the number of mkf we add at once.  Problem is that we can't tell how long it will take for the mkf to get into the map.  Need a smart way of adding a "delay" between additions
           {
-              mMessageForUser << " SHOULD BE Adding MultiKeyFrame to Map";
+              mMessageForUser << " CPER: SHOULD BE Adding MultiKeyFrame to Map";
 
-              ROS_WARN_STREAM("Original buffer size: " << mvKeyFrameBuffer.size() << " stream buffer size: " << mMultiKeyFrameBuffer.Size());
+              //ROS_WARN_STREAM("Original buffer size: " << mvKeyFrameBuffer.size() << " stream buffer size: " << mMultiKeyFrameBuffer.Size());
 
               // Print first 10 elements of original and modified buffers
               //ROS_WARN("------ BEFORE SORT ------- \n");
 
               //ROS_INFO("Printing 10 first elements in original buffer:");
-              std::stringstream buffer; 
+              /*std::stringstream buffer; 
               buffer << "\n";
               for(unsigned int i=0; i<vKeyframeScores.size() && i<10; i++)
               {
                   buffer << "(" <<  vKeyframeScores[i].first << ", " << mvKeyFrameBuffer[vKeyframeScores[i].second] << ")\n";
-              }
+              }*/
              // ROS_INFO_STREAM(buffer.str());
 
              // mMultiKeyFrameBuffer.PrintBuffer(10);
@@ -588,12 +590,12 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
                   
                  // ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestBufferKeyframeIndex] << " New: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n"); 
                     
-                  ROS_WARN_STREAM("calling AddNewKeyFrame #" << AddNewKFSeq);
+                  ROS_WARN_STREAM("calling AddNewKeyFrame #" << AddNewKFSeq++);
 
                   AddNewKeyFrameFromBuffer(bestSortIndex); // Original
 
-                  ROS_WARN_STREAM("Finished AddNewKeyFrame #" << AddNewKFSeq);
-                  AddNewKFSeq++;
+                  //ROS_WARN_STREAM("Finished AddNewKeyFrame #" << AddNewKFSeq);
+                  //AddNewKFSeq++;
                   
                   bestBufferKeyframeIndex = 0;
                   bestBufferKeyframeScore = 0;
@@ -1705,8 +1707,8 @@ void Tracker::UpdateMotionModel()
 // Gives the current MultiKeyFrame to the map maker. The current MultiKeyFrame needs to be regenerated.
 void Tracker::AddNewKeyFrame()
 {
-  ROS_DEBUG("Tracker: About to add new key frame");
 
+  ROS_WARN_STREAM("Tracker::AddNewKeyFrame: About to add new MKF " << mpCurrentMKF);
   // Save current pose because we'll need it to regenerate current MultiKeyFrame
   TooN::SE3<> se3Pose = mpCurrentMKF->mse3BaseFromWorld;
   MultiKeyFrame* pCurrentMKF_Temp = mpCurrentMKF;

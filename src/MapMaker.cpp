@@ -57,8 +57,11 @@ MapMaker::MapMaker(Map &map, TaylorCameraMap &cameras, BundleAdjusterBase &bundl
 
   Reset();
   start();
+
   AddNewMKFSeq = 0;
-  BundleSeq = 0;
+  AddFromTopSeq = 0;
+  BundleLocalSeq = 0;
+  BundleAllSeq = 0;
 }
 
 MapMaker::~MapMaker()
@@ -187,6 +190,7 @@ void MapMaker::run()
 
     if (ros::Time::now() - lastPublishTime > publishDur)
     {
+      //ROS_WARN_STREAM("PublishMapInfo Duration: " << ros::Time::now() - lastPublishTime);
       PublishMapInfo();
       lastPublishTime = ros::Time::now();
     }
@@ -210,7 +214,6 @@ void MapMaker::run()
     // even though no optimization will take place since the map is too small
     if (!mBundleAdjuster.ConvergedRecent() && IncomingQueueSize() == 0)
     {
-      ROS_INFO("MapMaker: Bundle adjusting recent");
       std::vector<std::pair<KeyFrame *, MapPoint *>> vOutliers;
 
       mBundleAdjuster.UseTukey((mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2));
@@ -221,9 +224,12 @@ void MapMaker::run()
       timingMsg.map_num_points = mMap.mlpPoints.size();
 
       ros::WallTime start = ros::WallTime::now();
-
+      ROS_WARN_STREAM("local #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local #Points before: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
       int nAccepted = mBundleAdjuster.BundleAdjustRecent(vOutliers);
       // mdMaxCov = mBundleAdjuster.GetMaxCov();
+      ROS_WARN_STREAM("local #MKF after: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local #Points after: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
 
       timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
       timingMsg.header.stamp = ros::Time::now();
@@ -235,10 +241,12 @@ void MapMaker::run()
       ROS_DEBUG_STREAM("Number of outliers: " << vOutliers.size());
 
       mMap.mbFreshMap = true;
+ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
       // ROS_DEBUG_STREAM("Max cov: "<<mdMaxCov);
 
       if (nAccepted < 0)  // bad
       {
+        ROS_INFO("local BA nAccepted < 0");
         mnNumConsecutiveFailedBA++;
         if (mnNumConsecutiveFailedBA > MapMakerServerBase::snMaxConsecutiveFailedBA)  // very bad
         {
@@ -251,7 +259,9 @@ void MapMaker::run()
         mnNumConsecutiveFailedBA = 0;
         HandleOutliers(vOutliers);
         PublishMapVisualization();
+	ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
       }
+	++BundleLocalSeq;
     }
 
     if (ResetRequested())
@@ -281,10 +291,6 @@ void MapMaker::run()
     // Run global bundle adjustment?
     if (mBundleAdjuster.ConvergedRecent() && !mBundleAdjuster.ConvergedFull() && IncomingQueueSize() == 0)
     {
-        ROS_WARN_STREAM("Started Global BA #" << BundleSeq );
-
-      ROS_WARN_STREAM("Started Number of map points: " << mMap.mlpPoints.size());
-      ROS_INFO("MapMaker: Bundle adjusting all");
       std::vector<std::pair<KeyFrame *, MapPoint *>> vOutliers;
 
       mBundleAdjuster.UseTukey(mState == MM_RUNNING && mMap.mlpMultiKeyFrames.size() > 2);
@@ -296,7 +302,11 @@ void MapMaker::run()
 
       ros::WallTime start = ros::WallTime::now();
 
+      ROS_WARN_STREAM("Global #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleAllSeq);
+      ROS_WARN_STREAM("Global #Points before: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
       int nAccepted = mBundleAdjuster.BundleAdjustAll(vOutliers);
+      ROS_WARN_STREAM("Global #MKF after: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleAllSeq);
+      ROS_WARN_STREAM("Global #Points after: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
 
       timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
       timingMsg.header.stamp = ros::Time::now();
@@ -312,6 +322,7 @@ void MapMaker::run()
 
       if (nAccepted < 0)  // bad
       {
+        ROS_INFO("global BA nAccepted < 0");
         mnNumConsecutiveFailedBA++;
         if (mnNumConsecutiveFailedBA > MapMakerServerBase::snMaxConsecutiveFailedBA)  // very bad
         {
@@ -323,6 +334,7 @@ void MapMaker::run()
       {
         mnNumConsecutiveFailedBA = 0;
         HandleOutliers(vOutliers);
+	ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
         PublishMapVisualization();
 
         if (mState == MM_INITIALIZING && (mdMaxCov < MapMakerServerBase::sdInitCovThresh || mbStopInit))
@@ -335,10 +347,8 @@ void MapMaker::run()
           mbStopInit = false;
         }
       }
-        ROS_WARN_STREAM("Finished Global BA #" << BundleSeq );
-      ROS_WARN_STREAM("Finished Number of map points: " << mMap.mlpPoints.size());
 
-        BundleSeq++;
+       BundleAllSeq++;
     }
 
     if (ResetRequested())
@@ -379,12 +389,9 @@ void MapMaker::run()
     }
 
     // Any new key-frames to be added?
-    if (IncomingQueueSize() > 0) // SABA
+    if (IncomingQueueSize() > 0) 
     {
-        ROS_WARN_STREAM("calling AddMultiKeyFrameFromTopOfQueue #" << AddNewMKFSeq);
       AddMultiKeyFrameFromTopOfQueue();  // Integrate into map data struct, and process
-        ROS_WARN_STREAM("Finished AddMultiKeyFrameFromTopOfQueue  #" << AddNewMKFSeq);
-        AddNewMKFSeq++;
 
     }  
 
@@ -408,17 +415,17 @@ void MapMaker::run()
 // be dealt with later, and return.
 void MapMaker::AddMultiKeyFrame(MultiKeyFrame *&pMKF_Incoming)
 {
-  ROS_INFO_STREAM("MapMaker: Incoming MKF, mean depth: " << pMKF_Incoming->mdTotalDepthMean);
+  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrame " << AddNewMKFSeq++ << " Incoming MKF: " << pMKF_Incoming);
 
   MultiKeyFrame *pMKF = pMKF_Incoming;  // take posession
   pMKF_Incoming = NULL;                 // set original to null, tracker will have to make new MKF
     ProcessIncomingKeyFrames(*pMKF);
 
-    ROS_INFO("MKF contains: ");
+    ROS_DEBUG("MKF contains: ");
   for (KeyFramePtrMap::iterator it = pMKF->mmpKeyFrames.begin(); it != pMKF->mmpKeyFrames.end(); it++)
     {
     KeyFrame &kf = *(it->second);
-    ROS_INFO_STREAM(kf.mCamName);
+    ROS_DEBUG_STREAM(kf.mCamName);
     if (kf.mpSBI)
     {
       delete kf.mpSBI;  // Mapmaker uses a different SBI than the tracker, so will re-gen its own
@@ -469,15 +476,17 @@ bool MapMaker::Init(MultiKeyFrame *&pMKF_Incoming, bool bPutPlaneAtOrigin)
 // Add a MultiKeyFrame from the internal queue to the map
 void MapMaker::AddMultiKeyFrameFromTopOfQueue()
 {
-  ROS_INFO("Adding MKF from top of queue");
+  mMap.mbFreshMap = false;
+ROS_INFO("mbFreshMap = false");
+  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrameFromTopOfQueue: Adding MKF from top of queue " << AddFromTopSeq++);
   boost::mutex::scoped_lock lock(mQueueMutex);
 
-  mMap.mbFreshMap = false;
 
   if (mqpMultiKeyFramesFromTracker.size() == 0)
     return;
 
   MultiKeyFrame *pMKF = mqpMultiKeyFramesFromTracker.front();
+  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrameFromTopOfQueue: going to add MKF " << pMKF);
   lock.unlock();  // important!!
 
   for (KeyFramePtrMap::iterator it = pMKF->mmpKeyFrames.begin(); it != pMKF->mmpKeyFrames.end(); it++)
@@ -524,13 +533,13 @@ void MapMaker::AddMultiKeyFrameFromTopOfQueue()
   {
     if (pMKF->NoImages())  // leftovers from Tracker, don't bother adding these
     {
-      ROS_INFO("MM_RUNNING: Got an MKF with no image, ignoring");
+      ROS_INFO_STREAM("MM_RUNNING: Got an MKF with no image, ignoring " << AddNewMKFSeq);
       pMKF->EraseBackLinksFromPoints();
       delete pMKF;
     }
     else
     {
-      ROS_INFO("MM_RUNNING: Trying to add MKF and create points");
+      ROS_INFO_STREAM("MM_RUNNING: Trying to add MKF and create points " << AddNewMKFSeq);
       bool bSuccess = AddMultiKeyFrameAndCreatePoints(pMKF);  // from MapMakerServerBase
       if (!bSuccess)
       {
@@ -541,7 +550,7 @@ void MapMaker::AddMultiKeyFrameFromTopOfQueue()
   }
   else  // INITIALIZING
   {
-    ROS_INFO("MM_INITIALIZING: Trying to add MKF and mark last as bad");
+    ROS_INFO_STREAM("MM_INITIALIZING: Trying to add MKF and mark last as bad " << AddNewMKFSeq);
     AddMultiKeyFrameAndMarkLastDeleted(pMKF, false);
     mMap.MoveDeletedMultiKeyFramesToTrash();
   }
@@ -552,6 +561,7 @@ void MapMaker::AddMultiKeyFrameFromTopOfQueue()
 
   lock.lock();
   mqpMultiKeyFramesFromTracker.pop_front();
+  ++AddNewMKFSeq;
   lock.unlock();
 }
 

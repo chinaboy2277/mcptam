@@ -77,7 +77,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
     return 0;
   }
 
-  ROS_DEBUG_STREAM("BundleAdjusterMulti received: " << spAdjustSet.size() << " movable MKFs, " << spFixedSet.size()
+  ROS_WARN_STREAM("BundleAdjusterMulti::BundleAdjust: BundleAdjusterMulti received: " << spAdjustSet.size() << " movable MKFs, " << spFixedSet.size()
                    << " fixed MKFs, " << spMapPoints.size() << " points");
 
   ChainBundle multiBundle(mmCameraModels, mbUseRobust, mbUseTukey, mbVerbose);
@@ -240,6 +240,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
     // Run the bundle adjuster. This returns the number of successful iterations
     nAccepted = AdjustAndUpdate(multiBundle, spAdjustSet, spMapPoints);
     mnTotalIterations = multiBundle.TotalIterations();
+ROS_WARN("BundleAdjust: finished AdjustAndUpdate");
   }
 
   if (nAccepted < 0)
@@ -258,7 +259,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
 
   // Handle outlier measurements:
   std::vector<std::tuple<int, int, std::string>> vOutliersEncoded = multiBundle.GetOutlierMeasurements();
-  ROS_INFO_STREAM("BundleAdjusterMulti: Got " << vOutliersEncoded.size() << " outliers");
+  //ROS_INFO_STREAM("BundleAdjusterMulti: Got " << vOutliersEncoded.size() << " outliers");
 
   for (unsigned int i = 0; i < vOutliersEncoded.size(); i++)
   {
@@ -351,6 +352,6 @@ int BundleAdjusterMulti::AdjustAndUpdate(ChainBundle& multiBundle, std::set<Mult
     if (!mUpdateCallback.empty())
       mUpdateCallback(spAdjustSet, spMapPoints);
   }
-
+ROS_WARN("BundleAdjusterMulti::AdjustAndUpdate() finished");
   return nAccepted;
 }

@@ -151,7 +151,7 @@ int BundleAdjusterBase::BundleAdjustAll(std::vector<std::pair<KeyFrame*, MapPoin
 
   // construct the sets of MKFs and points to be adjusted:
   // in this case, all of them
-  ROS_DEBUG_STREAM("There are " << mMap.mlpMultiKeyFrames.size() << " MKFs in the map");
+  ROS_WARN_STREAM("BundleAdjusterBase::BundleAdjustAll: There are " << mMap.mlpMultiKeyFrames.size() << " MKFs in the map");
   for (MultiKeyFramePtrList::iterator mkf_it = mMap.mlpMultiKeyFrames.begin(); mkf_it != mMap.mlpMultiKeyFrames.end();
        ++mkf_it)
   {
@@ -164,7 +164,7 @@ int BundleAdjusterBase::BundleAdjustAll(std::vector<std::pair<KeyFrame*, MapPoin
   }
   ROS_DEBUG_STREAM("Took " << spAdjustSet.size() << " of them, the rest are bad");
 
-  ROS_DEBUG_STREAM("There are " << mMap.mlpPoints.size() << " points in the map");
+  ROS_WARN_STREAM("BundleAdjusterBase::BundleAdjustAll: There are " << mMap.mlpPoints.size() << " points in the map");
   for (MapPointPtrList::iterator point_it = mMap.mlpPoints.begin(); point_it != mMap.mlpPoints.end(); ++point_it)
   {
     MapPoint& point = *(*point_it);
@@ -206,6 +206,8 @@ int BundleAdjusterBase::BundleAdjustRecent(std::vector<std::pair<KeyFrame*, MapP
   // First, make a list of the MultiKeyFrames we want adjusted in the adjuster.
   // This will be the last MultiKeyFrame inserted, and its nearest neighbors
   MultiKeyFrame& mkf_newest = *(mMap.mlpMultiKeyFrames.back());
+ROS_WARN_STREAM("BundleAdjusterBase::BundleAdjustRecent: Most recent MKF pointer: " << mMap.mlpMultiKeyFrames.back());
+
   spAdjustSet.insert(&mkf_newest);
   std::vector<MultiKeyFrame*> vpClosest = NClosestMultiKeyFrames(mkf_newest, BundleAdjusterBase::snRecentNum);
   for (int i = 0; i < BundleAdjusterBase::snRecentNum; i++)
