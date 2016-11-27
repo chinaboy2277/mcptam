@@ -141,6 +141,7 @@ std::vector<KeyFrame*> BundleAdjusterBase::NClosestKeyFrames(KeyFrame& kfSrc, un
 // All the arguments of this function are output variables
 int BundleAdjusterBase::BundleAdjustAll(std::vector<std::pair<KeyFrame*, MapPoint*>>& vOutliers)
 {
+ROS_WARN("----------------------------- BundleAdjusterBase::BundleAdjustAll START ------------------------");
   vOutliers.clear();
 
   std::set<MultiKeyFrame*> spAdjustSet;

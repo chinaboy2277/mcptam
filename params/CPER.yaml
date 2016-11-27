@@ -1,2 +1,2 @@
-USE_CPER: false
+USE_CPER: true
 MKF_BUFFER_CAPACITY: 55

@@ -60,6 +60,7 @@ MapMakerServer::MapMakerServer(Map &map, TaylorCameraMap &cameras, BundleAdjuste
   dynamic_cast<BundleAdjusterMulti *>(&mBundleAdjuster)
   ->SetUpdateCallback(boost::bind(&MapMakerServer::SendUpdate, this, _1, _2));
 
+    ROS_INFO("#################################################### MapMakerServer::MapMakerServer()  running server ##############################################");
   Reset();  // act like we got a reset request from client on startup
   start();
 }
@@ -107,7 +108,6 @@ void MapMakerServer::run()
   while (!shouldStop() &&
          ros::ok())  // ShouldStop is a CVD::Thread func which return true if the thread is told to exit.
   {
-    ROS_INFO("running server");
     if (ResetRequested())
     {
       Reset();
@@ -397,13 +397,11 @@ void MapMakerServer::AddCallback(std::set<MultiKeyFrame *> spMultiKeyFrames, std
   {
     ROS_ASSERT(pMKF->NoImages());
 
-    ROS_INFO("MM_INITIALIZING: Trying to add MKF and mark last as deleted");
     AddMultiKeyFrameAndMarkLastDeleted(pMKF, false);
     mMap.MoveDeletedMultiKeyFramesToTrash();
   }
   else if (mState == MM_RUNNING)
   {
-    ROS_INFO("MM_RUNNING: Trying to add MKF and create points");
 
     if (pMKF->NoImages())  // leftovers from tracker sending us no image MKFs during init, ignore
     {

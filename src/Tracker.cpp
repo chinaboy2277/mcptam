@@ -494,6 +494,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
         mMessageForUser << std::endl;
       }
 
+ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser #Map points: " << mMap.mlpPoints.size() << ", #MKF: " << mMap.mlpMultiKeyFrames.size() << "////////////////////////////////////");
       mMessageForUser << "Map: " << mMap.mlpPoints.size() << "P, " << mMap.mlpMultiKeyFrames.size() << "MKF, "
                       << mMap.mlpPointsTrash.size() << "P in Trash, " << mMap.mlpMultiKeyFramesTrash.size()
                       << " MKF in Trash";
@@ -506,7 +507,8 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
-          ROS_WARN_STREAM("calling EvaluateTracker #" << EvalSeq++ );
+          ROS_ERROR_STREAM("calling EvaluateTracker #" << EvalSeq++ << "# of MKFs: " << mMap.mlpMultiKeyFrames.size() << "# of map points: " << mMap.mlpPoints.size()  );
+          
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
                   //ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
                  // EvalSeq++;
@@ -519,8 +521,10 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
           if( (trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD ) )
           {
+		ROS_ERROR_STREAM("Tracker: Entropy above threshold seq: " << EvalSeq-1);
           		if(mMap.mbFreshMap)
 			{
+				ROS_ERROR("Tracker: mbFreshMap = true");
           			addEntropyMKF = true;
 			}
           		else
@@ -532,7 +536,8 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
 
           if(addEntropyMKF ) //add new keyframe //todo (adas) figure how to to limit the number of mkf we add at once.  Problem is that we can't tell how long it will take for the mkf to get into the map.  Need a smart way of adding a "delay" between additions
           {
-              mMessageForUser << " CPER: SHOULD BE Adding MultiKeyFrame to Map";
+              //mMessageForUser << " CPER: SHOULD BE Adding MultiKeyFrame to Map";
+
 
               //ROS_WARN_STREAM("Original buffer size: " << mvKeyFrameBuffer.size() << " stream buffer size: " << mMultiKeyFrameBuffer.Size());
 
@@ -590,7 +595,7 @@ void Tracker::TrackFrame(ImageBWMap& imFrames, ros::Time timestamp, bool bDraw)
                   
                  // ROS_INFO_STREAM("Winner MKF Pointer -- Original: " << mvKeyFrameBuffer[bestBufferKeyframeIndex] << " New: " << mMultiKeyFrameBuffer.AtIndex(0).second << "\n"); 
                     
-                  ROS_WARN_STREAM("calling AddNewKeyFrame #" << AddNewKFSeq++);
+                  ROS_ERROR_STREAM("############# Tracker::AddNewKeyFrame #" << AddNewKFSeq++ << "MKF:" << mMultiKeyFrameBuffer.AtIndex(0).second);
 
                   AddNewKeyFrameFromBuffer(bestSortIndex); // Original
 

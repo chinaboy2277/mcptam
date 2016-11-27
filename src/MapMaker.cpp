@@ -224,12 +224,12 @@ void MapMaker::run()
       timingMsg.map_num_points = mMap.mlpPoints.size();
 
       ros::WallTime start = ros::WallTime::now();
-      ROS_WARN_STREAM("local #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
-      ROS_WARN_STREAM("local #Points before: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local BA #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local BA #Points before: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
       int nAccepted = mBundleAdjuster.BundleAdjustRecent(vOutliers);
       // mdMaxCov = mBundleAdjuster.GetMaxCov();
-      ROS_WARN_STREAM("local #MKF after: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
-      ROS_WARN_STREAM("local #Points after: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local BA #MKF after: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleLocalSeq);
+      ROS_WARN_STREAM("local BA #Points after: " << mMap.mlpPoints.size() << " " << BundleLocalSeq);
 
       timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
       timingMsg.header.stamp = ros::Time::now();
@@ -241,7 +241,7 @@ void MapMaker::run()
       ROS_DEBUG_STREAM("Number of outliers: " << vOutliers.size());
 
       mMap.mbFreshMap = true;
-ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
+      // ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
       // ROS_DEBUG_STREAM("Max cov: "<<mdMaxCov);
 
       if (nAccepted < 0)  // bad
@@ -259,7 +259,7 @@ ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
         mnNumConsecutiveFailedBA = 0;
         HandleOutliers(vOutliers);
         PublishMapVisualization();
-	ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
+	// ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
       }
 	++BundleLocalSeq;
     }
@@ -302,11 +302,11 @@ ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
 
       ros::WallTime start = ros::WallTime::now();
 
-      ROS_WARN_STREAM("Global #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleAllSeq);
-      ROS_WARN_STREAM("Global #Points before: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
+      //ROS_WARN_STREAM("Global #MKF before: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleAllSeq);
+      //ROS_WARN_STREAM("Global #Points before: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
       int nAccepted = mBundleAdjuster.BundleAdjustAll(vOutliers);
-      ROS_WARN_STREAM("Global #MKF after: " <<  mMap.mlpMultiKeyFrames.size() << " " << BundleAllSeq);
-      ROS_WARN_STREAM("Global #Points after: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
+      ROS_WARN_STREAM("Global BA #" << BundleAllSeq << "  Finished #MKF: " <<  mMap.mlpMultiKeyFrames.size() << " #points: " << mMap.mlpPoints.size());
+      //ROS_WARN_STREAM("Global #Points after: " << mMap.mlpPoints.size() << " " << BundleAllSeq);
 
       timingMsg.elapsed = (ros::WallTime::now() - start).toSec();
       timingMsg.header.stamp = ros::Time::now();
@@ -334,14 +334,14 @@ ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
       {
         mnNumConsecutiveFailedBA = 0;
         HandleOutliers(vOutliers);
-	ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
+	//ROS_ERROR_STREAM("published map visualization: " << ros::WallTime::now());
         PublishMapVisualization();
 
         if (mState == MM_INITIALIZING && (mdMaxCov < MapMakerServerBase::sdInitCovThresh || mbStopInit))
         {
-          ROS_INFO_STREAM("INITIALIZING, Max cov " << mdMaxCov << " below threshold "
-                          << MapMakerServerBase::sdInitCovThresh
-                          << ", switching to MM_RUNNING");
+          //ROS_INFO_STREAM("INITIALIZING, Max cov " << mdMaxCov << " below threshold "
+            //              << MapMakerServerBase::sdInitCovThresh
+            //             << ", switching to MM_RUNNING");
           mState = MM_RUNNING;
           ClearIncomingQueue();
           mbStopInit = false;
@@ -415,7 +415,7 @@ ROS_ERROR("MapMaker::run: local BA: mbFreshMap=true");
 // be dealt with later, and return.
 void MapMaker::AddMultiKeyFrame(MultiKeyFrame *&pMKF_Incoming)
 {
-  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrame " << AddNewMKFSeq++ << " Incoming MKF: " << pMKF_Incoming);
+  ROS_WARN_STREAM("------------------ MapMaker::AddMultiKeyFrame #" << AddNewMKFSeq << "  START  Incoming MKF: " << pMKF_Incoming);
 
   MultiKeyFrame *pMKF = pMKF_Incoming;  // take posession
   pMKF_Incoming = NULL;                 // set original to null, tracker will have to make new MKF
@@ -447,6 +447,7 @@ void MapMaker::AddMultiKeyFrame(MultiKeyFrame *&pMKF_Incoming)
 
     if(mBundleAdjuster.Running())   // Tell the mapmaker to stop doing low-priority stuff and concentrate on this KF first.
         mBundleAdjuster.RequestAbort();
+  ROS_WARN_STREAM("------------------ MapMaker::AddMultiKeyFrame #" << AddNewMKFSeq++ );
 }
 
 
@@ -455,6 +456,7 @@ void MapMaker::AddMultiKeyFrame(MultiKeyFrame *&pMKF_Incoming)
 // otherwise with no map?
 bool MapMaker::Init(MultiKeyFrame *&pMKF_Incoming, bool bPutPlaneAtOrigin)
 {
+ROS_WARN("------------------- MapMaker::Init   START -------------------------");
   MultiKeyFrame *pMKF = pMKF_Incoming;  // take posession
   pMKF_Incoming = NULL;                 // set original to null, tracker will have to make new MKF
 
@@ -469,6 +471,7 @@ bool MapMaker::Init(MultiKeyFrame *&pMKF_Incoming, bool bPutPlaneAtOrigin)
       kf.mpSBI = NULL;
     }
   }
+ROS_WARN("------------------- MapMaker::Init   will call MapMakerServerBase::InitFromMultiKeyFrame and return  -------------------------");
 
   return InitFromMultiKeyFrame(pMKF, bPutPlaneAtOrigin);  // from MapMakerServerBase
 }
@@ -476,9 +479,8 @@ bool MapMaker::Init(MultiKeyFrame *&pMKF_Incoming, bool bPutPlaneAtOrigin)
 // Add a MultiKeyFrame from the internal queue to the map
 void MapMaker::AddMultiKeyFrameFromTopOfQueue()
 {
+ROS_WARN_STREAM("------------------------------------------- MapMaker::AddMultiKeyFrameFromTopOfQueue START #" << AddFromTopSeq);
   mMap.mbFreshMap = false;
-ROS_INFO("mbFreshMap = false");
-  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrameFromTopOfQueue: Adding MKF from top of queue " << AddFromTopSeq++);
   boost::mutex::scoped_lock lock(mQueueMutex);
 
 
@@ -486,7 +488,7 @@ ROS_INFO("mbFreshMap = false");
     return;
 
   MultiKeyFrame *pMKF = mqpMultiKeyFramesFromTracker.front();
-  ROS_INFO_STREAM("MapMaker::AddMultiKeyFrameFromTopOfQueue: going to add MKF " << pMKF);
+  ROS_WARN_STREAM("MapMaker::AddMultiKeyFrameFromTopOfQueue: going to add MKF " << pMKF);
   lock.unlock();  // important!!
 
   for (KeyFramePtrMap::iterator it = pMKF->mmpKeyFrames.begin(); it != pMKF->mmpKeyFrames.end(); it++)
@@ -533,14 +535,14 @@ ROS_INFO("mbFreshMap = false");
   {
     if (pMKF->NoImages())  // leftovers from Tracker, don't bother adding these
     {
-      ROS_INFO_STREAM("MM_RUNNING: Got an MKF with no image, ignoring " << AddNewMKFSeq);
+      ROS_INFO_STREAM("MM_RUNNING: Got an MKF with no image, ignoring " << AddFromTopSeq);
       pMKF->EraseBackLinksFromPoints();
       delete pMKF;
     }
     else
     {
-      ROS_INFO_STREAM("MM_RUNNING: Trying to add MKF and create points " << AddNewMKFSeq);
       bool bSuccess = AddMultiKeyFrameAndCreatePoints(pMKF);  // from MapMakerServerBase
+      ROS_INFO_STREAM("######################### MapMaker::AddMultiKeyFrameFromTopOfQueue Added MKF and created points #" << AddFromTopSeq);
       if (!bSuccess)
       {
         pMKF->EraseBackLinksFromPoints();
@@ -550,7 +552,7 @@ ROS_INFO("mbFreshMap = false");
   }
   else  // INITIALIZING
   {
-    ROS_INFO_STREAM("MM_INITIALIZING: Trying to add MKF and mark last as bad " << AddNewMKFSeq);
+    ROS_INFO_STREAM("MM_INITIALIZING: Trying to add MKF and mark last as bad " << AddFromTopSeq);
     AddMultiKeyFrameAndMarkLastDeleted(pMKF, false);
     mMap.MoveDeletedMultiKeyFramesToTrash();
   }
@@ -561,15 +563,16 @@ ROS_INFO("mbFreshMap = false");
 
   lock.lock();
   mqpMultiKeyFramesFromTracker.pop_front();
-  ++AddNewMKFSeq;
   lock.unlock();
+
+ROS_WARN_STREAM("*************************^^^^^^^^^^^^^^^^^^^  MapMaker::AddMultiKeyFrameFromTopOfQueue END #" << AddFromTopSeq++  << "^^^^^^^^^^^^^^^^^^^^^^^^^********************************** ");
 }
 
 // Deletes bad points and removes pointers to them from internal queues.
 void MapMaker::HandleBadEntities()
 {
-  ROS_DEBUG_STREAM("HandleBadEntities: Before move to trash we have " << mMap.mlpPoints.size() << " map points, and "
-                   << mMap.mlpMultiKeyFrames.size() << " MKFs");
+//  ROS_INFO_STREAM("------------------------- HandleBadEntities: Before move to trash we have " << mMap.mlpPoints.size() << " map points, and "
+  //                 << mMap.mlpMultiKeyFrames.size() << " MKFs");
   mMap.MoveBadMultiKeyFramesToTrash();
   mMap.MoveDeletedMultiKeyFramesToTrash();
 
@@ -578,7 +581,7 @@ void MapMaker::HandleBadEntities()
 
   mMap.MoveBadPointsToTrash();
   mMap.MoveDeletedPointsToTrash();
-  ROS_DEBUG_STREAM("HandleBadEntities: After move to trash we have " << mMap.mlpPoints.size() << " map points, and "
+  ROS_INFO_STREAM("HandleBadEntities: After move to trash we have " << mMap.mlpPoints.size() << " map points, and "
                    << mMap.mlpMultiKeyFrames.size() << " MKFs");
 
   EraseBadEntitiesFromQueues();

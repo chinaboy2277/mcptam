@@ -60,6 +60,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
                                       std::set<MapPoint*> spMapPoints,
                                       std::vector<std::pair<KeyFrame*, MapPoint*>>& vOutliers, bool bRecent)
 {
+ROS_WARN("---------------------------- BundleAdjusterMulti::BundleAdjust START ------------------------------------");
   // The bundle adjuster does different accounting of MultiKeyFrames and MapPoints;
   // Translation maps are stored:
   mmPoint_BundleID.clear();
@@ -240,7 +241,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
     // Run the bundle adjuster. This returns the number of successful iterations
     nAccepted = AdjustAndUpdate(multiBundle, spAdjustSet, spMapPoints);
     mnTotalIterations = multiBundle.TotalIterations();
-ROS_WARN("BundleAdjust: finished AdjustAndUpdate");
+ROS_WARN("BundleAdjusterMulti::BundleAdjust finished AdjustAndUpdate");
   }
 
   if (nAccepted < 0)
@@ -275,6 +276,7 @@ ROS_WARN("BundleAdjust: finished AdjustAndUpdate");
   mbBundleRunning = false;
   mbBundleAbortRequested = false;
 
+ROS_WARN("------------------------------- BundleAdjusterMulti::BundleAdjust END ---------------------------------------");
   return nAccepted;
 }
 

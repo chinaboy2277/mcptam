@@ -158,7 +158,7 @@ TooN::Vector<3> MapMakerServerBase::ReprojectPoint(TooN::SE3<> se3AfromB, const 
 // Build an initial map using epipolar matches between KeyFrames of a MultiKeyFrame
 bool MapMakerServerBase::InitFromMultiKeyFrame(MultiKeyFrame* pMKF, bool bPutPlaneAtOrigin)
 {
-  ROS_INFO("MapMakerServerBase::InitFromMultiKeyFrame");
+  ROS_INFO("---------------------------------------------MapMakerServerBase::InitFromMultiKeyFrame START -------------------------------------------------------");
 
   pMKF->mbFixed = true;
   pMKF->mse3BaseFromWorld = TooN::SE3<>();
@@ -271,6 +271,7 @@ bool MapMakerServerBase::InitFromMultiKeyFrame(MultiKeyFrame* pMKF, bool bPutPla
   }
 
   mMap.mbGood = true;
+  ROS_INFO("###############---------------------------------MapMakerServerBase::InitFromMultiKeyFrame END-------------------------------------------------------");
 
   return true;
 }
@@ -337,6 +338,7 @@ void MapMakerServerBase::MarkFurthestMultiKeyFrameAsBad(MultiKeyFrame& mkf)
 // Add a new MultikeyFrame to the map, erase the one at the end of the map
 void MapMakerServerBase::AddMultiKeyFrameAndMarkLastDeleted(MultiKeyFrame* pMKF, bool bMakeRest)
 {
+ROS_INFO_STREAM("####################-------------------  MapMakerServerBase::AddMultiKeyFrameAndMarkLastDeleted pMKF: " << pMKF << " -------------------##########");
   if (mMap.mlpMultiKeyFrames.size() > 1)
   {
     MultiKeyFrame& mkf = *(mMap.mlpMultiKeyFrames.back());
@@ -362,7 +364,7 @@ void MapMakerServerBase::AddMultiKeyFrameAndMarkLastDeleted(MultiKeyFrame* pMKF,
 // Common code for adding a MultiKeyFrame to a map and generating new MapPoints through epipolar search
 bool MapMakerServerBase::AddMultiKeyFrameAndCreatePoints(MultiKeyFrame* pMKF)
 {
-  ROS_INFO_STREAM("MapMakerServerBase: Adding new MKF to map, mean depth: " << pMKF->mdTotalDepthMean);
+  ROS_INFO_STREAM("###########################---------------------------------MapMakerServerBase:AddMKFAndCreatePoints Adding new MKF to map: " << pMKF << " -----------------###############################");
 
   pMKF->mbFixed = false;
 
@@ -410,7 +412,7 @@ bool MapMakerServerBase::AddMultiKeyFrameAndCreatePoints(MultiKeyFrame* pMKF)
     pMKF->RefreshSceneDepthRobust();
     mBundleAdjuster.SetNotConverged();
 
-    ROS_INFO_STREAM("MapMakerServerBase: Created " << mMap.mlpPoints.size() - nStartMapSize << " new map points");
+    ROS_INFO_STREAM("############################------------------------------------ MapMakerServerBase: Created " << mMap.mlpPoints.size() - nStartMapSize << " new map points -----------------------------------###########################");
   }
   else  // couldn't even add one large point? MKF is probably bad
   {
@@ -1283,6 +1285,8 @@ void MapMakerServerBase::HandleOutliers(std::vector<std::pair<KeyFrame*, MapPoin
 // Points marked bad are removed from the internal queues.
 void MapMakerServerBase::EraseBadEntitiesFromQueues()
 {
+ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() start ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+
   for (std::list<std::pair<KeyFrame*, MapPoint*>>::iterator jit = mlFailureQueue.begin(); jit != mlFailureQueue.end();)
   {
     KeyFrame* pKF = jit->first;
@@ -1303,4 +1307,5 @@ void MapMakerServerBase::EraseBadEntitiesFromQueues()
     else
       ++jit;
   }
+ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() end  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 }

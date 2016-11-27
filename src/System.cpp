@@ -284,6 +284,7 @@ void System::Run()
 
     if (mpGLWindow)
     {
+ROS_ERROR_STREAM("//////////////////////// System: DrawCaption ///////////////////////////////");
       mpGLWindow->DrawCaption(captionStream.str());
       mpGLWindow->DrawMenus();
       mpGLWindow->swap_buffers();
