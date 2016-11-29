@@ -396,7 +396,7 @@ void Tracker::TrackFrameSetup(ImageBWMap& imFrames, ros::Time timestamp, bool bD
       glRasterPos(irOffset);
       glDrawPixels(imDraw);
 
-      if (Tracker::sbDrawFASTCorners)
+      if (Tracker::sbDrawFASTCorners)//Tracker::sbDrawFASTCorners
       {
         glColor3f(1, 0, 1);
         glPointSize(LevelScale(*gvnDrawLevel));
@@ -508,8 +508,6 @@ ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
 
-	if(mMapMaker.TrackerQueueSize()==0)
-	{
           ROS_ERROR_STREAM("calling EvaluateTracker #" << EvalSeq++ << "# of MKFs: " << mMap.mlpMultiKeyFrames.size() << "# of map points: " << mMap.mlpPoints.size()  );
           
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
@@ -520,7 +518,7 @@ ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser 
           RecordMeasurementsAndBufferMKF();      // Original and Modified merged.
 
 
-          if( (trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD ) )
+          if( (mMapMaker.TrackerQueueSize()==0) && ((trackerEntropy[0] > ENTROPY_THRESHOLD ) || (trackerEntropy[1] > ENTROPY_THRESHOLD ) || (trackerEntropy[2] > ENTROPY_THRESHOLD )) )
           {
 		ROS_ERROR_STREAM("Tracker: Entropy above threshold seq: " << EvalSeq-1);
           		if(mMap.mbFreshMap)
@@ -609,7 +607,7 @@ ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser 
 
                   mMultiKeyFrameBuffer.Clear();
               }
-          }
+         
 	}
       }
 	// Heuristics to check if a key-frame should be added to the map:
