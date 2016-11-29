@@ -507,11 +507,12 @@ ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser 
 
       if(mbUseCper) // use the entropy based keyframe method (CPER)
       {
+
+	if(mMapMaker.TrackerQueueSize()==0)
+	{
           ROS_ERROR_STREAM("calling EvaluateTracker #" << EvalSeq++ << "# of MKFs: " << mMap.mlpMultiKeyFrames.size() << "# of map points: " << mMap.mlpPoints.size()  );
           
           TooN::Vector<3> trackerEntropy = EvaluateTracker(this);
-                  //ROS_WARN_STREAM("Finished EvaluateTracker #" << EvalSeq);
-                 // EvalSeq++;
          
           bool addEntropyMKF = false;
 
@@ -609,6 +610,7 @@ ROS_ERROR_STREAM("//////////////////////////// Tracker: getting mMessageForUser 
                   mMultiKeyFrameBuffer.Clear();
               }
           }
+	}
       }
 	// Heuristics to check if a key-frame should be added to the map:
     else  if (mbAddNext ||  // mMapMaker.Initializing() ||
