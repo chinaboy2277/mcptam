@@ -60,7 +60,7 @@ int BundleAdjusterMulti::BundleAdjust(std::set<MultiKeyFrame*> spAdjustSet, std:
                                       std::set<MapPoint*> spMapPoints,
                                       std::vector<std::pair<KeyFrame*, MapPoint*>>& vOutliers, bool bRecent)
 {
-ROS_WARN("---------------------------- BundleAdjusterMulti::BundleAdjust START ------------------------------------");
+//ROS_WARN("---------------------------- BundleAdjusterMulti::BundleAdjust START ------------------------------------");
   // The bundle adjuster does different accounting of MultiKeyFrames and MapPoints;
   // Translation maps are stored:
   mmPoint_BundleID.clear();
@@ -78,8 +78,8 @@ ROS_WARN("---------------------------- BundleAdjusterMulti::BundleAdjust START -
     return 0;
   }
 
-  ROS_WARN_STREAM("BundleAdjusterMulti::BundleAdjust: BundleAdjusterMulti received: " << spAdjustSet.size() << " movable MKFs, " << spFixedSet.size()
-                   << " fixed MKFs, " << spMapPoints.size() << " points");
+ // ROS_WARN_STREAM("BundleAdjusterMulti::BundleAdjust: BundleAdjusterMulti received: " << spAdjustSet.size() << " movable MKFs, " << spFixedSet.size()
+                   //<< " fixed MKFs, " << spMapPoints.size() << " points");
 
   ChainBundle multiBundle(mmCameraModels, mbUseRobust, mbUseTukey, mbVerbose);
   mbBundleRunning = true;
@@ -241,7 +241,7 @@ ROS_WARN("---------------------------- BundleAdjusterMulti::BundleAdjust START -
     // Run the bundle adjuster. This returns the number of successful iterations
     nAccepted = AdjustAndUpdate(multiBundle, spAdjustSet, spMapPoints);
     mnTotalIterations = multiBundle.TotalIterations();
-ROS_WARN("BundleAdjusterMulti::BundleAdjust finished AdjustAndUpdate");
+//ROS_WARN("BundleAdjusterMulti::BundleAdjust finished AdjustAndUpdate");
   }
 
   if (nAccepted < 0)
@@ -276,7 +276,7 @@ ROS_WARN("BundleAdjusterMulti::BundleAdjust finished AdjustAndUpdate");
   mbBundleRunning = false;
   mbBundleAbortRequested = false;
 
-ROS_WARN("------------------------------- BundleAdjusterMulti::BundleAdjust END ---------------------------------------");
+//ROS_WARN("------------------------------- BundleAdjusterMulti::BundleAdjust END ---------------------------------------");
   return nAccepted;
 }
 
@@ -354,6 +354,6 @@ int BundleAdjusterMulti::AdjustAndUpdate(ChainBundle& multiBundle, std::set<Mult
     if (!mUpdateCallback.empty())
       mUpdateCallback(spAdjustSet, spMapPoints);
   }
-ROS_WARN("BundleAdjusterMulti::AdjustAndUpdate() finished");
+//ROS_WARN("BundleAdjusterMulti::AdjustAndUpdate() finished");
   return nAccepted;
 }

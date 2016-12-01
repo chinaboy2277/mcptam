@@ -1285,7 +1285,7 @@ void MapMakerServerBase::HandleOutliers(std::vector<std::pair<KeyFrame*, MapPoin
 // Points marked bad are removed from the internal queues.
 void MapMakerServerBase::EraseBadEntitiesFromQueues()
 {
-ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() start ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+//ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() start ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 
   for (std::list<std::pair<KeyFrame*, MapPoint*>>::iterator jit = mlFailureQueue.begin(); jit != mlFailureQueue.end();)
   {
@@ -1307,5 +1307,5 @@ ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServe
     else
       ++jit;
   }
-ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() end  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+//ROS_INFO_STREAM(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   MapMakerServerBase::EraseBadEntitiesFromQueues() end  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 }
