@@ -1,6 +1,7 @@
 #ifndef MCPTAM_CPER_H
 #define MCPTAM_CPER_H
 
+#include <tuple>
 #include <vector>
 #include <cstddef>
 #include <sstream>
@@ -12,20 +13,27 @@
 #define EXP_8              1e-8
 #define EPSILON            0.00001
 #define ENTROPY_THRESHOLD -4.0
-#define MKF_BUFFER_SIZE    10000
+#define MKF_BUFFER_SIZE    100
 
 
 
-template <class PairItem1, class PairItem2, class Compare = std::greater<PairItem1> >
-struct SortPair
+template <class PairItem1, class PairItem2, class PairItem3, class Compare = std::greater<PairItem1> >
+struct Sort
 {
   bool operator()(const std::pair<PairItem1,PairItem2>& left, const std::pair<PairItem1,PairItem2>& right) 
   {
     Compare compare;
     return compare(left.first, right.first);
   }
-  
+
+  bool operator()(const std::tuple<PairItem1,PairItem2, PairItem3>& left, const std::tuple<PairItem1,PairItem2,PairItem3>& right) 
+  {
+    Compare compare;
+    return compare(std::get<0>(left), std::get<0>(right));
+  }
+
 };
+
 
 
 
@@ -33,15 +41,8 @@ template <class Element>
 class StreamBuffer
 {
   public:
-    StreamBuffer() 
-    {
-        capacity_ = MKF_BUFFER_SIZE;
-        size_ = 0;
-        head_ = 0;
-        tail_ = -1;
-        buffer_.reserve(capacity_);
-    }
-    StreamBuffer(std::size_t capacity) 
+
+    StreamBuffer(std::size_t capacity = MKF_BUFFER_SIZE) 
     {
         capacity_ = capacity;
         size_ = 0;
@@ -140,6 +141,7 @@ class StreamBuffer
        capacity_ = buffer_.capacity();
    }
 
+/*
    void PrintBuffer()
    {
         ROS_INFO("Printing StreamBuffer object...");
@@ -170,6 +172,7 @@ class StreamBuffer
        ROS_INFO_STREAM(sbufferContents.str());
    }
 
+
    void PrintQueueBuffer()
    {
        std::stringstream sbufferContents;
@@ -185,7 +188,7 @@ class StreamBuffer
        }
 
        ROS_INFO_STREAM(sbufferContents.str());
-   }
+   }*/
 
 
 

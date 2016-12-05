@@ -581,7 +581,7 @@ void MapMaker::HandleBadEntities()
 
   mMap.MoveBadPointsToTrash();
   mMap.MoveDeletedPointsToTrash();
-  ROS_INFO_STREAM("HandleBadEntities: After move to trash we have " << mMap.mlpPoints.size() << " map points, and " << mMap.mlpMultiKeyFrames.size() << " MKFs");
+  //ROS_INFO_STREAM("HandleBadEntities: After move to trash we have " << mMap.mlpPoints.size() << " map points, and " << mMap.mlpMultiKeyFrames.size() << " MKFs");
 
   EraseBadEntitiesFromQueues();
   mMap.EmptyTrash();
